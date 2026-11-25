@@ -35,7 +35,18 @@ export const project = (samples: readonly Sample[], start: number | undefined, e
   return { kind: 'limit', rate, at }
 }
 
-export const chartSvg = (samples: readonly Sample[], resetsAt: string | undefined, now: number) => {
+/**
+ * The readings of the 5-hour window that's running now, and when it resets. Saved
+ * readings outlive sessions, so drop any from a window that has already reset; and
+ * before this session's first reading, take the reset time from the saved ones.
+ */
+export const currentWindow = (all: readonly Sample[], resetsAt: string | undefined, now: number) => {
+  const samples = all.filter(s => s.t > now - FIVE_H && !(s.reset && Date.parse(s.reset) <= now))
+  return { samples, resetsAt: resetsAt ?? samples.at(-1)?.reset }
+}
+
+export const chartSvg = (all: readonly Sample[], knownReset: string | undefined, now: number) => {
+  const { samples, resetsAt } = currentWindow(all, knownReset, now)
   const reset = resetsAt ? Date.parse(resetsAt) : NaN
   const end = Number.isFinite(reset) ? reset : undefined
   const start = end !== undefined ? end - FIVE_H : samples[0] ? samples[0].t : now - FIVE_H
@@ -53,15 +64,20 @@ export const chartSvg = (samples: readonly Sample[], resetsAt: string | undefine
   body += textEl('LIMIT', X0 + 4, y(100) + 5, '#f83800', 1.5)
   body += textEl('100', 16, y(100) - 3, '#7c7c7c', 1.5) + textEl('50', 22, y(50) - 3, '#7c7c7c', 1.5) + textEl('0', 28, y(0) - 6, '#7c7c7c', 1.5)
   body += `<rect x="${X0}" y="${Y1}" width="${X1 - X0}" height="2" fill="#7c7c7c"/><rect x="${X0 - 2}" y="${Y0}" width="2" height="${Y1 - Y0 + 2}" fill="#7c7c7c"/>`
-  body += textEl(end !== undefined ? 'START' : 'FIRST', X0, Y1 + 6, '#7c7c7c', 1.5)
-  body += textEl(end !== undefined ? 'RESET' : '+5H', X1 - (end !== undefined ? 28 : 16), Y1 + 6, '#7c7c7c', 1.5)
-
-  // now marker
+  // now marker, and the axis labels it doesn't cover (each label is 6px a letter)
+  const startLabel = end !== undefined ? 'START' : 'FIRST'
+  const endLabel = end !== undefined ? 'RESET' : '+5H'
+  const endX = X1 - endLabel.length * 6 + 2
+  let nowX: number | undefined
   if (now >= start && now <= stop) {
     const nx = x(now)
+    nowX = Math.max(X0, Math.min(nx - 8, X1 - 18))
     for (let yy = Y0; yy < Y1; yy += 6) body += `<rect x="${nx}" y="${yy}" width="1" height="3" fill="#3cbcfc" opacity=".7"/>`
-    body += textEl('NOW', Math.min(nx - 8, X1 - 46), Y1 + 6, '#3cbcfc', 1.5)
+    body += textEl('NOW', nowX, Y1 + 6, '#3cbcfc', 1.5)
   }
+  const clear = (x0: number, width: number) => nowX === undefined || nowX + 18 + 4 <= x0 || nowX >= x0 + width + 4
+  if (clear(X0, startLabel.length * 6)) body += textEl(startLabel, X0, Y1 + 6, '#7c7c7c', 1.5)
+  if (clear(endX, endLabel.length * 6)) body += textEl(endLabel, endX, Y1 + 6, '#7c7c7c', 1.5)
 
   const last = inWindow.at(-1)
   if (!last) {
@@ -109,7 +125,8 @@ const svg = (body: string) =>
 
 export const CHART_H = H
 
-export const chartAlt = (samples: readonly Sample[], resetsAt: string | undefined, now: number) => {
+export const chartAlt = (all: readonly Sample[], knownReset: string | undefined, now: number) => {
+  const { samples, resetsAt } = currentWindow(all, knownReset, now)
   const last = samples.at(-1)
   if (!last) return '5-hour burn rate chart: no data yet.'
   const end = resetsAt ? Date.parse(resetsAt) : undefined

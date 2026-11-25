@@ -1,7 +1,7 @@
 {
   "name": "pixel-tv",
   "displayName": "Pixel TV",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "An animated 8-bit, console-era theme for Claude Code, with a pixel CRT TV pane showing your 5-hour, 7-day and context usage, a burn-rate chart and a quest log",
   "author": { "name": "asyrewicze", "url": "https://github.com/asyrewicze" },
   "homepage": "https://github.com/asyrewicze/pixel-tv-cc",
