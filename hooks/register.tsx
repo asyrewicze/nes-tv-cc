@@ -4,7 +4,7 @@ import type { EngineInterface, Register, SessionContextUsage, SessionRateLimit, 
 import type { LogEntry, Reading, Sample } from '../types'
 import { chartAlt, chartSvg, CHART_H } from './chart'
 import { makeColors } from './make-colors.js'
-import { GAP, layoutFor } from './layout'
+import { GAP, layoutFor, opensUnasked } from './layout'
 import { describe, logAlt, logHeight, logSvg } from './questlog'
 import { SCENE } from './scene'
 import { tvAlt, tvSvg } from './tv'
@@ -164,9 +164,10 @@ export const register: Register = on => {
     await $.command.register({ name: 'tv', description: 'Turn on the 8-bit usage TV' })
     await $.command.register({ name: 'pixel-theme', description: 'Turn the 8-bit theme on or off: /pixel-theme on | off' })
     // Open the pane unasked only where it's a sidebar: the desktop app docks it
-    // beside the chat. Elsewhere (a terminal, where it would sit above the
-    // prompt) it waits for /tv.
-    if (e.surface === 'desktop') void $.ui.open({ id: PANE, title: 'Usage TV' })
+    // beside the chat. A desktop session can start before its surface attaches
+    // (surface null), so only a known terminal or the mobile app, which don't
+    // dock it, wait for /tv instead.
+    if (opensUnasked(e.surface)) void $.ui.open({ id: PANE, title: 'Usage TV' })
 
     // Recount the "resets in" lines once a minute.
     $.clock.every(60_000, async () => {
