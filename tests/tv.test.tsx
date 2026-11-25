@@ -1,9 +1,9 @@
 import { expect, test } from 'claude-code/testing'
 
 const PANE = {
-  plugin: 'nes-tv',
+  plugin: 'pixel-tv',
   component: 'Pane',
-  requestId: 'nes-tv',
+  requestId: 'pixel-tv',
   props: {
     title: 'Usage TV',
     isFocused: false,
@@ -43,7 +43,7 @@ test('the quest log narrates a turn and the chart projects the 5-hour window', a
   // an earlier session saw 10% an hour and a half before "now"
   engine(on, [{ t: Date.parse('2029-12-31T18:30:00Z'), p: 10, reset: '2030-01-01T00:00:00Z' }])
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
-  await $.prompt.submit({ text: 'fix the bug please' })
+  await $.prompt.submit({ text: 'fix the bug please' } as any) // only the text matters here
   await $.tool.call({ tool: 'Read', file_path: '/a/b/register.tsx' })
   await $.tool.call({ tool: 'Bash', command: 'npm test' })
   await $.turn.complete({ answer: 'done', durationMs: 1000, isAborted: false, turnId: 't1', reason: 'answer', category: null, explanation: null, text: 'done' } as any)

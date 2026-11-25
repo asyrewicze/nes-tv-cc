@@ -1,5 +1,14 @@
 {
-  "name": "nes-tv-cc",
-  "owner": { "name": "asyrewicze" },
-  "plugins": [{ "name": "nes-tv", "source": "./" }]
+  "name": "pixel-tv-cc",
+  "description": "Pixel TV: an animated 8-bit theme and usage TV for Claude Code",
+  "owner": { "name": "asyrewicze", "url": "https://github.com/asyrewicze" },
+  "plugins": [
+    {
+      "name": "pixel-tv",
+      "source": "./",
+      "description": "An animated 8-bit, console-era theme with a pixel CRT TV pane showing your 5-hour, 7-day and context usage",
+      "category": "themes",
+      "tags": ["theme", "pixel-art", "8-bit", "usage"]
+    }
+  ]
 }

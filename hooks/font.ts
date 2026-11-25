@@ -54,7 +54,7 @@ export const dur = (ms: number) => {
   return h > 0 ? `${h}H ${m % 60}M` : `${m}M`
 }
 
-/** An NES-style dialog frame: black box, white double border, a title tab. */
+/** An 8-bit-style dialog frame: black box, white double border, a title tab. */
 export const frame = (w: number, h: number, title: string) =>
   `<rect width="${w}" height="${h}" fill="#000"/>` +
   `<rect x="3" y="3" width="${w - 6}" height="${h - 6}" fill="none" stroke="#fcfcfc" stroke-width="2"/>` +
