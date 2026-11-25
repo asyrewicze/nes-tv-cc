@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { layoutFor, opensUnasked } from '../hooks/layout'
+import { drawsThemes, layoutFor, opensUnasked } from '../hooks/layout'
 
 const CHART = 150
 
@@ -36,4 +36,12 @@ test('the pane opens by itself on desktop, including before a surface attaches, 
   expect(opensUnasked(null)).toBe(true)
   expect(opensUnasked('terminal')).toBe(false)
   expect(opensUnasked('mobile')).toBe(false)
+})
+
+test('the theme is set again when a desktop or mobile display attaches, not a terminal or editor', async () => {
+  expect(drawsThemes('desktop')).toBe(true)
+  expect(drawsThemes('mobile')).toBe(true)
+  expect(drawsThemes('terminal')).toBe(false)
+  expect(drawsThemes('vscode')).toBe(false)
+  expect(drawsThemes(null)).toBe(false)
 })
