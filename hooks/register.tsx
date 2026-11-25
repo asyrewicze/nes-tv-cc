@@ -380,7 +380,8 @@ async function applyLook($: EngineInterface) {
   for (const look of [{ ...LOOK, sound: SOUND }, LOOK, { colors: LOOK.colors, backdrop: LOOK.backdrop }]) {
     try {
       const result = await $.theme.set(look)
-      if (!result.isDrawn) $.ui.log(`pixel-tv: the theme isn't drawn here: ${result.reason}`)
+      // No request id means it will never draw (not just: not yet, until a display attaches).
+      if (!result.isDrawn && result.requestId === undefined) $.ui.log(`pixel-tv: the theme isn't drawn here: ${result.reason}`)
       return
     } catch (error) {
       $.ui.log(`pixel-tv: ${String(error)}`)
