@@ -9,7 +9,7 @@ const PANE = {
     isFocused: false,
     bodyColumns: 40,
     placement: 'dock',
-    scroll: { offset: 0, bodyRows: 20 },
+    scroll: { offset: 0, bodyRows: 38 },
     view: {},
   },
 } as const

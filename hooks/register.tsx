@@ -4,6 +4,7 @@ import type { EngineInterface, Register, SessionContextUsage, SessionRateLimit, 
 import type { LogEntry, Reading, Sample } from '../types'
 import { chartAlt, chartSvg, CHART_H } from './chart'
 import { makeColors } from './make-colors.js'
+import { GAP, layoutFor } from './layout'
 import { describe, logAlt, logHeight, logSvg } from './questlog'
 import { SCENE } from './scene'
 import { tvAlt, tvSvg } from './tv'
@@ -18,8 +19,6 @@ const log = atom({ plugin: 'nes-tv', key: 'log' } as const, [], { shape: 'log-1'
 const STORE_KEY = 'samples-5h-v1'
 // 'off' once the person runs /nes-theme off, kept across sessions; anything else is on.
 const THEME_KEY = 'theme-mode-v1'
-const LOG_LINES = 17
-const GAP = 6
 const MAX_LOG = 80
 
 const addSample = (list: readonly Sample[], r: Reading, now: number): Sample[] => {
@@ -266,19 +265,25 @@ export const register: Register = on => {
       // read the time to the minute, so a log update leaves their sources unchanged
       // and the app doesn't redraw them at all.
       const minute = Math.floor(now / 60_000) * 60_000
-      const tv = <Svg source={tvSvg(r, minute)} alt={tvAlt(r)} width={e.props.placement === 'widget' ? 200 : 320} height={e.props.placement === 'widget' ? 195 : 312} />
       if (e.props.placement === 'widget') {
-        return <Box flexDirection="column" alignItems="center">{tv}</Box>
+        return (
+          <Box flexDirection="column" alignItems="center">
+            <Svg source={tvSvg(r, minute)} alt={tvAlt(r)} width={200} height={195} />
+          </Box>
+        )
       }
+      // Fit the pane's height: the quest log fills what's left, then drops off,
+      // then the chart, then the TV shrinks, so there's never a scroll bar.
+      const fit = layoutFor(e.props.scroll.bodyRows, CHART_H)
       const s = await read($, samples)
       const entries = await read($, log)
-      const chart = topGap(chartSvg(s, r.five?.resetsAt, minute), CHART_H, GAP)
-      const quest = topGap(logSvg(entries, LOG_LINES, now), logHeight(LOG_LINES), GAP)
+      const chart = fit.showChart ? topGap(chartSvg(s, r.five?.resetsAt, minute), CHART_H, GAP) : undefined
+      const quest = fit.logLines > 0 ? topGap(logSvg(entries, fit.logLines, now), logHeight(fit.logLines), GAP) : undefined
       return (
         <Box flexDirection="column" alignItems="center">
-          {tv}
-          <Svg source={chart.source} alt={chartAlt(s, r.five?.resetsAt, minute)} width={320} height={chart.height} />
-          <Svg source={quest.source} alt={logAlt(entries)} width={320} height={quest.height} />
+          <Svg source={tvSvg(r, minute)} alt={tvAlt(r)} width={fit.tvW} height={fit.tvH} />
+          {chart && <Svg source={chart.source} alt={chartAlt(s, r.five?.resetsAt, minute)} width={320} height={chart.height} />}
+          {quest && <Svg source={quest.source} alt={logAlt(entries)} width={320} height={quest.height} />}
         </Box>
       )
     }
