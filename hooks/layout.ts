@@ -47,3 +47,6 @@ export const layoutFor = (bodyRows: number, chartH: number): Layout => {
  * wait for /tv.
  */
 export const opensUnasked = (surface: string | null) => surface !== 'terminal' && surface !== 'mobile'
+
+/** Whether a display draws themes: the desktop and mobile apps do; terminals and editors don't. */
+export const drawsThemes = (surface: string | null) => surface === 'desktop' || surface === 'mobile'

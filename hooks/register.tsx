@@ -4,7 +4,7 @@ import type { EngineInterface, Register, SessionContextUsage, SessionRateLimit, 
 import type { LogEntry, Reading, Sample } from '../types'
 import { chartAlt, chartSvg, CHART_H } from './chart'
 import { makeColors } from './make-colors.js'
-import { GAP, layoutFor, opensUnasked } from './layout'
+import { drawsThemes, GAP, layoutFor, opensUnasked } from './layout'
 import { describe, logAlt, logHeight, logSvg } from './questlog'
 import { SCENE } from './scene'
 import { tvAlt, tvSvg } from './tv'
@@ -182,6 +182,13 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // A session can start before a display attaches, and some builds don't draw a
+  // theme set before then, so set it again when a desktop or mobile display joins.
+  on('session.attach', async ($, e, next) => {
+    if (drawsThemes(e.surface) && !(await isThemeOff($))) await applyLook($)
+    return next(e)
+  })
+
   // ---- the quest log ----
 
   on('prompt.submit', async ($, e, next) => {
@@ -230,8 +237,9 @@ export const register: Register = on => {
 
   on('command.run', { command: 'pixel-theme' }, async ($, e) => {
     const arg = e.args.trim().toLowerCase()
-    const wasOff = await isThemeOff($)
-    if (arg === '') return { text: `Pixel theme is ${wasOff ? 'off' : 'on'}. Use /pixel-theme on or /pixel-theme off.` }
+    if (arg === '') {
+      return { text: `Pixel theme is ${(await isThemeOff($)) ? 'off' : 'on'}. Use /pixel-theme on or /pixel-theme off.` }
+    }
     if (arg !== 'on' && arg !== 'off') return { text: 'Use /pixel-theme on or /pixel-theme off.' }
     await $.store.set(THEME_KEY, arg)
     if (arg === 'off') {
@@ -242,7 +250,9 @@ export const register: Register = on => {
       }
       return { text: 'Pixel theme off: the app is back to its default look. The usage pane stays; close it from its tab. /pixel-theme on brings the theme back.' }
     }
-    if (wasOff) await applyLook($)
+    // Always set it, even if it was already on: it doubles as a way to bring the
+    // look back if the app dropped it.
+    await applyLook($)
     return { text: 'Pixel theme on.' }
   })
 
