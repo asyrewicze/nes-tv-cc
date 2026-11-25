@@ -23,17 +23,11 @@ Type `/tv` to reopen the pane. In a terminal it draws as text.
 
 With reduced motion turned on, the backdrop holds still.
 
-### Theme modes
+### Turning the theme off
 
-Animated backdrops cost CPU while anything in them is moving, so the theme has three modes. Pick one with `/nes-theme`; your choice is remembered across sessions.
+`/nes-theme off` puts the app back to its default look, and `/nes-theme on` brings the theme back. The choice is remembered across sessions, and `/nes-theme` on its own says which is on. The usage pane isn't affected; close it from its tab, and reopen it with `/tv`.
 
-| Command | What you get |
-| --- | --- |
-| `/nes-theme full` | Everything moves: drifting clouds, twinkling stars, blinking windows, the flag, shooting stars, the parade, and the TV's animations. |
-| `/nes-theme lite` | The same scene, holding still, with one character running by every 48 seconds. Between runs nothing animates, including the pane, so it's much lighter on CPU. |
-| `/nes-theme off` | The app's default look. The usage pane stays; reopen it with `/tv` if you close it. |
-
-`/nes-theme` on its own says which mode is on.
+**A note on CPU.** Animated backdrops are new in the desktop app, and drawing one costs noticeable CPU while it's on screen, mostly in the app's renderer process. nes-tv keeps its own share low: every animation moves in steps on a shared one-second beat, and nothing animates offstage. In testing, though, most of the cost came from having a backdrop at all, which is outside a mod's control. If battery life matters more than the scenery, `/nes-theme off` removes it.
 
 ## Install
 

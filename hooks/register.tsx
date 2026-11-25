@@ -5,7 +5,7 @@ import type { LogEntry, Reading, Sample } from '../types'
 import { chartAlt, chartSvg, CHART_H } from './chart'
 import { makeColors } from './make-colors.js'
 import { describe, logAlt, logHeight, logSvg } from './questlog'
-import { CHARACTER_IDS, liteScene, SCENE } from './scene'
+import { SCENE } from './scene'
 import { tvAlt, tvSvg } from './tv'
 
 const PANE = 'nes-tv'
@@ -13,14 +13,13 @@ const reading = atom({ plugin: 'nes-tv', key: 'reading' } as const, {}, { shape:
 const tick = atom({ plugin: 'nes-tv', key: 'tick' } as const, 0)
 const samples = atom({ plugin: 'nes-tv', key: 'samples' } as const, [], { shape: 'samples-1' })
 const log = atom({ plugin: 'nes-tv', key: 'log' } as const, [], { shape: 'log-1' })
-const mode = atom({ plugin: 'nes-tv', key: 'mode' } as const, 'full')
-const runner = atom({ plugin: 'nes-tv', key: 'runner' } as const, null, { shape: 'runner-1' })
 
 // The 5-hour samples outlive the session ($.store), since the window spans sessions.
 const STORE_KEY = 'samples-5h-v1'
-const THEME_OFF_KEY = 'theme-off-v1' // read once, to carry over an earlier /nes-theme off
+// Whether the person turned the theme off with /nes-theme off, kept across sessions:
+// 'off' or 'full' (an earlier 'lite' counts as on), with the first key as a fallback.
+const THEME_OFF_KEY = 'theme-off-v1'
 const THEME_MODE_KEY = 'theme-mode-v1'
-type ThemeMode = 'full' | 'lite' | 'off'
 const LOG_LINES = 17
 const GAP = 6
 const MAX_LOG = 80
@@ -145,15 +144,8 @@ export const register: Register = on => {
     const unpainted = problems.find(line => line.startsWith("Desktop won't paint"))
     if (unpainted !== undefined) $.ui.log(`nes-tv: ${unpainted}`)
 
-    // The look in the mode the person chose with /nes-theme (kept across sessions).
-    const chosen = await storedMode($)
-    await update($, mode, () => chosen)
-    if (chosen !== 'off') await applyLook($)
-
-    // Lite mode: send one character across every 48 seconds by redrawing the
-    // backdrop with a single run that ends, so nothing animates in between.
-    $.clock.after(5_000, () => nextRunner($))
-    $.clock.every(48_000, () => nextRunner($))
+    // The look, unless the person turned it off with /nes-theme off.
+    if (!(await isThemeOff($))) await applyLook($)
 
     // Bring back the 5-hour samples earlier sessions saw.
     const stored = await $.store.get(STORE_KEY)
@@ -173,7 +165,7 @@ export const register: Register = on => {
     }
 
     await $.command.register({ name: 'tv', description: 'Turn on the 8-bit usage TV' })
-    await $.command.register({ name: 'nes-theme', description: 'Theme mode: /nes-theme full | lite | off' })
+    await $.command.register({ name: 'nes-theme', description: 'Turn the 8-bit theme on or off: /nes-theme on | off' })
     void $.ui.open({ id: PANE, title: 'Usage TV' })
 
     // Recount the "resets in" lines once a minute.
@@ -237,30 +229,20 @@ export const register: Register = on => {
 
   on('command.run', { command: 'nes-theme' }, async ($, e) => {
     const arg = e.args.trim().toLowerCase()
-    if (arg === 'test' || arg.startsWith('test ')) return { text: await runTest($, arg.slice(4).trim()) }
-    const current = await storedMode($)
-    const USAGE =
-      'full: everything moves. lite: the scene holds still and a character runs by every 48 seconds (lighter on CPU). off: the app\'s default look.'
-    if (arg === '') return { text: `NES theme is ${current}. Use /nes-theme full, lite or off. ${USAGE}` }
-    const wanted: ThemeMode | undefined = arg === 'on' ? 'full' : arg === 'full' || arg === 'lite' || arg === 'off' ? arg : undefined
-    if (!wanted) return { text: `Use /nes-theme full, lite or off. ${USAGE}` }
-    await $.store.set(THEME_MODE_KEY, wanted)
-    await update($, mode, () => wanted)
-    if (wanted === 'off') {
+    const wasOff = await isThemeOff($)
+    if (arg === '') return { text: `NES theme is ${wasOff ? 'off' : 'on'}. Use /nes-theme on or /nes-theme off.` }
+    if (arg !== 'on' && arg !== 'off') return { text: 'Use /nes-theme on or /nes-theme off.' }
+    await $.store.set(THEME_MODE_KEY, arg === 'off' ? 'off' : 'full')
+    if (arg === 'off') {
       try {
         await $.theme.clear()
       } catch (error) {
         $.ui.log(`nes-tv: ${String(error)}`)
       }
-      return { text: 'NES theme off: the app is back to its default look. The usage pane stays; close it from its tab. /nes-theme full or lite brings the theme back.' }
+      return { text: 'NES theme off: the app is back to its default look. The usage pane stays; close it from its tab. /nes-theme on brings the theme back.' }
     }
-    if (current === 'off') await applyLook($)
-    return {
-      text:
-        wanted === 'lite'
-          ? 'NES theme lite: the scene holds still and a character runs by every 48 seconds.'
-          : 'NES theme full: everything moves.',
-    }
+    if (wasOff) await applyLook($)
+    return { text: 'NES theme on.' }
   })
 
   on('command.run', { command: 'tv' }, async $ => {
@@ -271,9 +253,7 @@ export const register: Register = on => {
   on('ui.render', { component: 'Backdrop' }, async ($, e, next) => {
     if (e.surface !== 'desktop' && e.surface !== 'mobile') return next(e)
     const { Svg } = $.ui.resolve(e)
-    const isLite = (await read($, mode)) === 'lite'
-    const source = isLite ? liteScene((await read($, runner)) ?? undefined) : SCENE
-    return <Svg source={source} alt="A pixel night sky over a castle, a city and hills" isInteractive />
+    return <Svg source={SCENE} alt="A pixel night sky over a castle, a city and hills" isInteractive />
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
@@ -288,16 +268,14 @@ export const register: Register = on => {
       // read the time to the minute, so a log update leaves their sources unchanged
       // and the app doesn't redraw them at all.
       const minute = Math.floor(now / 60_000) * 60_000
-      // lite mode: the pane holds still too (finite effects like the typing stay)
-      const calm = (await read($, mode)) === 'lite' ? stillPane : (svg: string) => svg
-      const tv = <Svg source={calm(tvSvg(r, minute))} alt={tvAlt(r)} width={e.props.placement === 'widget' ? 200 : 320} height={e.props.placement === 'widget' ? 195 : 312} />
+      const tv = <Svg source={tvSvg(r, minute)} alt={tvAlt(r)} width={e.props.placement === 'widget' ? 200 : 320} height={e.props.placement === 'widget' ? 195 : 312} />
       if (e.props.placement === 'widget') {
         return <Box flexDirection="column" alignItems="center">{tv}</Box>
       }
       const s = await read($, samples)
       const entries = await read($, log)
-      const chart = topGap(calm(chartSvg(s, r.five?.resetsAt, minute)), CHART_H, GAP)
-      const quest = topGap(calm(logSvg(entries, LOG_LINES, now)), logHeight(LOG_LINES), GAP)
+      const chart = topGap(chartSvg(s, r.five?.resetsAt, minute), CHART_H, GAP)
+      const quest = topGap(logSvg(entries, LOG_LINES, now), logHeight(LOG_LINES), GAP)
       return (
         <Box flexDirection="column" alignItems="center">
           {tv}
@@ -388,75 +366,9 @@ async function applyLook($: EngineInterface) {
   }
 }
 
-/** The theme mode the person chose, carrying over an earlier `/nes-theme off`. */
-async function storedMode($: EngineInterface): Promise<ThemeMode> {
+/** Whether the person turned the theme off with /nes-theme off. */
+async function isThemeOff($: EngineInterface) {
   const saved = await $.store.get(THEME_MODE_KEY)
-  if (saved === 'full' || saved === 'lite' || saved === 'off') return saved
-  return (await $.store.get(THEME_OFF_KEY)) === true ? 'off' : 'full'
-}
-
-// Lite mode's running order: each character once per round, shuffled, never the
-// same one twice in a row across rounds.
-let bag: string[] = []
-let lastRunner = ''
-
-/** In lite mode, picks the next character and redraws the backdrop for its run. */
-async function nextRunner($: EngineInterface) {
-  if ((await read($, mode)) !== 'lite') return
-  if (bag.length === 0) {
-    bag = [...CHARACTER_IDS].sort(() => Math.random() - 0.5)
-    if (bag[0] === lastRunner) bag.push(bag.shift()!)
-  }
-  const id = bag.shift()!
-  lastRunner = id
-  const nonce = await $.clock.now() // differs every run, so each redraw restarts it
-  await update($, runner, () => ({ id, nonce }))
-}
-
-
-/** Takes out a drawing's looping animations, leaving ones that finish by themselves. */
-function stillPane(svg: string) {
-  return svg.replace(/animation:[^;}]*infinite[^;}]*;?/g, '')
-}
-
-// ---- performance test variants (temporary) ----------------------------------
-
-const TESTS: Record<string, { about: string; look: () => ThemeSetArgs }> = {
-  'no-backdrop': {
-    about: 'colors and message styling, no backdrop',
-    look: () => ({ colors: LOOK.colors, style: LOOK.style, sound: SOUND }),
-  },
-  flat: {
-    about: 'a flat color backdrop instead of the scene (no drawing)',
-    look: () => ({ ...LOOK, sound: SOUND, backdrop: { color: '#0c0c24' } }),
-  },
-  'no-glass': {
-    about: 'the full scene with the frosted glass turned off',
-    look: () => ({ ...LOOK, sound: SOUND, backdrop: { scene: 'nes-night', glass: false } }),
-  },
-  'no-style': {
-    about: 'the full scene without the message styling',
-    look: () => ({ colors: LOOK.colors, backdrop: LOOK.backdrop, sound: SOUND }),
-  },
-}
-
-/** `/nes-theme test <variant>`: sets one variant of the look for this session only. */
-async function runTest($: EngineInterface, name: string) {
-  const list = Object.entries(TESTS).map(([key, t]) => `${key} (${t.about})`).join('; ')
-  if (name === 'reset') {
-    const chosen = await storedMode($)
-    await update($, mode, () => chosen)
-    if (chosen === 'off') await $.theme.clear()
-    else await applyLook($)
-    return `Test over: back to ${chosen} mode.`
-  }
-  const variant = TESTS[name]
-  if (!variant) return `Pick a test variant: ${list}. /nes-theme test reset puts things back.`
-  await update($, mode, () => 'full') // variants are measured against full mode
-  try {
-    await $.theme.set(variant.look())
-  } catch (error) {
-    return `That variant was refused: ${String(error)}`
-  }
-  return `Testing ${name}: ${variant.about}. Measure, then try another or run /nes-theme test reset. Not saved.`
+  if (saved !== undefined) return saved === 'off'
+  return (await $.store.get(THEME_OFF_KEY)) === true
 }

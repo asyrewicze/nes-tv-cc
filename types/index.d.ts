@@ -23,10 +23,6 @@ declare module 'claude-code' {
       tick: number
       samples: Shaped<Sample[]>
       log: Shaped<LogEntry[]>
-      /** full, lite or off, as /nes-theme set it */
-      mode: string
-      /** lite mode: the character on its way across, if any */
-      runner: Shaped<{ id: string; nonce: number } | null>
     }
   }
 }

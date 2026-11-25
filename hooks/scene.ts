@@ -1,4 +1,4 @@
-import { oneRun, parade } from './characters'
+import { parade } from './characters'
 
 // The backdrop: a pixel night (dark mode) or day (light mode) over a castle,
 // a city skyline and stepped hills, with a parade of characters (characters.ts).
@@ -230,7 +230,7 @@ const ground = (() => {
 
 // ---- motion -----------------------------------------------------------------
 
-// Full mode: the looping parade and the always-on scenery motion.
+// The looping parade and the always-on scenery motion.
 const cast = parade()
 const AMBIENT = `.clouds{animation:drift 480s steps(480) infinite;animation-delay:-240s}
 .flag{transform-box:fill-box;transform-origin:0 50%;animation:wave 2s steps(1) infinite}
@@ -300,17 +300,6 @@ ${characters}
 </g>
 </svg>`
 
-/** Full mode: everything moves, and the parade loops by itself. */
+/** The whole animated scene. */
 export const SCENE = compose(`${cast.css}\n${AMBIENT}`, cast.svg)
 
-/**
- * Lite mode: no looping animation at all, so between runs the scene is idle.
- * `runner` is the character to send across once, as the mod redraws the scene
- * for each run; with none, the scene is completely still.
- */
-export const liteScene = (runner?: { id: string; nonce: number }) => {
-  const run = runner ? oneRun(runner.id, runner.nonce) : { css: '', svg: '' }
-  return compose(`.shoot{display:none}\n${run.css}`, run.svg)
-}
-
-export { CHARACTER_IDS } from './characters'
