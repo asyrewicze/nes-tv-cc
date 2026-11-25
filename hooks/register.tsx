@@ -237,8 +237,7 @@ export const register: Register = on => {
   on('ui.render', { component: 'Backdrop' }, ($, e, next) => {
     if (e.surface !== 'desktop' && e.surface !== 'mobile') return next(e)
     const { Svg } = $.ui.resolve(e)
-    // Drawn as an image, not a framed document: cheaper for the app to keep animating.
-    return <Svg source={SCENE} alt="A pixel night sky with drifting clouds over blocky hills" />
+    return <Svg source={SCENE} alt="A pixel night sky with drifting clouds over blocky hills" isInteractive />
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
