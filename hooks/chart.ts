@@ -105,7 +105,7 @@ export const chartSvg = (samples: readonly Sample[], resetsAt: string | undefine
 }
 
 const svg = (body: string) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" shape-rendering="crispEdges"><style>.blink{animation:b 1s steps(1) infinite}@keyframes b{50%{opacity:0}}</style>${body}</svg>`
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" shape-rendering="crispEdges"><style>.blink{animation:b 2s steps(1) infinite}@keyframes b{50%{opacity:0}}</style>${body}</svg>`
 
 export const CHART_H = H
 

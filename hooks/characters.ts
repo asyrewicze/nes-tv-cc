@@ -160,7 +160,7 @@ const CHARACTERS: Character[] = [
     a: [...PENGUIN, '....ooo...ooo...'],
     b: [...penguinB, '......oooooo....'],
     pal: { k: 'pk', w: 'pw', e: 'pe', o: 'po', r: 'pr' },
-    s: 4, bob: 1, cross: 14.4, step: 0.5, lift: 0, restX: 1180,
+    s: 4, bob: 1, cross: 14.5, step: 0.5, lift: 0, restX: 1180,
     css: '.pk{fill:#101018}.pw{fill:#f8f8f8}.pe{fill:#fcfcfc}.po{fill:#f89820}.pr{fill:#e40058}',
   },
   {
@@ -168,7 +168,7 @@ const CHARACTERS: Character[] = [
     a: [...KNIGHT_TOP, '...ll...ll......', '..ll.....ll.....', '.SSS.....SSS....'],
     b: [...KNIGHT_TOP, '....ll.ll.......', '....ll.ll.......', '...SSS.SSS......'],
     pal: { r: 'kr', s: 'ks', S: 'kS', v: 'kv', b: 'kb', y: 'ky', g: 'kg', h: 'kh', l: 'kl' },
-    s: 4, bob: 1, cross: 13, step: 0.45, lift: 0, restX: -400,
+    s: 4, bob: 1, cross: 13, step: 0.5, lift: 0, restX: -400,
     css: '.kr{fill:#d82800}.ks{fill:#c8c8d0}.kS{fill:#74747c}.kv{fill:#101018}.kb{fill:#0050d8}.ky{fill:#f8b800}.kg{fill:#fcfcfc}.kh{fill:#7c4c18}.kl{fill:#545460}',
   },
   {
@@ -176,7 +176,7 @@ const CHARACTERS: Character[] = [
     a: DRAGON_A,
     b: DRAGON_B,
     pal: { g: 'dg', G: 'dG', m: 'dm', y: 'dy', e: 'de', k: 'dk', f: 'df', o: 'do' },
-    s: 4, bob: 0, cross: 11, step: 0.42, lift: 100, restX: -400,
+    s: 4, bob: 0, cross: 11, step: 0.5, lift: 100, restX: -400,
     css: '.dg{fill:#00a844}.dG{fill:#006820}.dm{fill:#80d010}.dy{fill:#f8d878}.de{fill:#fcfcfc}.dk{fill:#101018}.df{fill:#f83800}.do{fill:#f8b800}',
   },
   {
@@ -184,7 +184,7 @@ const CHARACTERS: Character[] = [
     a: [...MONSTER_TOP, '....pppp......pppp....', '....pppp......pppp....', '...PPPPP.....PPPPP....', '..ccPPPP.....PPPPcc...'],
     b: [...MONSTER_TOP, '.....pppp...pppp......', '.....pppp...PPPPP.....', '....PPPPP..ccPPPP.....', '...ccPPPP.............'],
     pal: { h: 'mh', p: 'mp', P: 'mP', e: 'me', k: 'mk', m: 'mm', t: 'mt', c: 'mc' },
-    s: 6, bob: 0, cross: 24, step: 0.9, lift: 0, restX: -400,
+    s: 6, bob: 0, cross: 24, step: 1, lift: 0, restX: -400,
     css: '.mh{fill:#fce0a8}.mp{fill:#8c3cd8}.mP{fill:#5c1c9c}.me{fill:#fcfcfc}.mk{fill:#101018}.mm{fill:#3c0c3c}.mt{fill:#fcfcfc}.mc{fill:#fce0a8}',
   },
   {
@@ -192,13 +192,13 @@ const CHARACTERS: Character[] = [
     a: [...PLUMBER_TOP, '...ttt..ttt.....', '..ttt....ttt....', '.BBB.....BBB....'],
     b: [...PLUMBER_TOP, '....ttt.tt......', '....ttt.tt......', '...BBBB.BBB.....'],
     pal: { o: 'uo', O: 'uO', f: 'uf', e: 'ue', b: 'ub', t: 'ut', T: 'uT', w: 'uw', h: 'uh', r: 'ur', y: 'uy', G: 'uG', B: 'uB' },
-    s: 4, bob: 1, cross: 12, step: 0.4, lift: 0, restX: -400,
+    s: 4, bob: 1, cross: 12, step: 0.5, lift: 0, restX: -400,
     css: '.uo{fill:#f87818}.uO{fill:#c84c0c}.uf{fill:#fcbc8c}.ue{fill:#101018}.ub{fill:#7c4c18}.ut{fill:#008888}.uT{fill:#005858}.uw{fill:#bcbcbc}.uh{fill:#c8a060}.ur{fill:#d82800}.uy{fill:#a87c30}.uG{fill:#e0e0e8}.uB{fill:#503000}',
   },
 ]
 
 const SLOT = 48 // seconds between runs, as before
-const RUN_FPS = 12 // position updates per second while a character runs
+const RUN_FPS = 8 // position updates per second while a character runs
 const GROUND = 836
 
 /** 15 runs, each character three times, never the same one twice in a row. */
@@ -234,17 +234,30 @@ export const parade = () => {
     // gliding at the display's full frame rate: far fewer redraws of the scene
     const go = (x: number) => `{transform:translateX(${x}px);animation-timing-function:steps(${Math.round(c.cross * RUN_FPS)})}`
     let frames = `0%${at(start)}`
+    // The waddle swaps frames only while running: an offstage loop would make the
+    // whole scene redraw for nothing. Times at which frame A or B starts showing:
+    const showA: string[] = ['0%']
+    const showB: string[] = []
+    const half = c.step / 2
     order.forEach((id, i) => {
       if (id !== c.id) return
-      const t0 = (i * SLOT) / cycle
-      const t1 = (i * SLOT + c.cross) / cycle
+      const s0 = i * SLOT
+      const t0 = s0 / cycle
+      const t1 = (s0 + c.cross) / cycle
       frames += `${pct(t0 * 100)}${go(start)}${pct(t1 * 100)}${snap(end)}${pct(t1 * 100 + 0.01)}${at(start)}`
+      for (let k = 1; k * half < c.cross; k++) (k % 2 ? showB : showA).push(pct(((s0 + k * half) / cycle) * 100))
+      showA.push(pct(t1 * 100))
     })
     frames += `100%${at(start)}`
+    showA.push('100%')
     css += c.css
     css += `@keyframes run-${c.id}{${frames}}`
     css += `.run-${c.id}{animation:run-${c.id} ${cycle}s linear 5s infinite backwards}`
-    css += `.run-${c.id} .fa{animation:fa ${c.step}s steps(1) infinite}.run-${c.id} .fb{animation:fb ${c.step}s steps(1) infinite}`
+    const list = (l: string[]) => l.join(',')
+    css += `@keyframes wa-${c.id}{${list(showA)}{opacity:1}${showB.length ? `${list(showB)}{opacity:0}` : ''}}`
+    css += `@keyframes wb-${c.id}{${list(showA)}{opacity:0}${showB.length ? `${list(showB)}{opacity:1}` : ''}}`
+    css += `.run-${c.id} .fa{animation:wa-${c.id} ${cycle}s steps(1,end) 5s infinite backwards}`
+    css += `.run-${c.id} .fb{animation:wb-${c.id} ${cycle}s steps(1,end) 5s infinite backwards}`
     svg +=
       `<g transform="translate(${c.restX} ${y})"><g class="run-${c.id}">` +
       `<g class="fa">${sprite(c.a, c.pal, c.s)}</g>` +

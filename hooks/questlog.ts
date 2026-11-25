@@ -90,7 +90,7 @@ export const logSvg = (entries: readonly LogEntry[], lines: number, now: number)
   })
   body += `<svg x="10" y="10" width="${W - 20}" height="${H - 20}" viewBox="10 10 ${W - 20} ${H - 20}" overflow="hidden">${inner}</svg>`
   if (shown.length === 0) body += textEl('YOUR QUEST BEGINS...', 80, H / 2 - 4, '#7cb8b8')
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" shape-rendering="crispEdges"><style>.blink{animation:b 1s steps(1) infinite}@keyframes b{50%{opacity:0}}.type{animation:t .7s both}@keyframes t{from{transform:translateX(0)}to{transform:translateX(var(--w))}}</style>${body}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" shape-rendering="crispEdges"><style>.blink{animation:b 2s steps(1) infinite}@keyframes b{50%{opacity:0}}.type{animation:t .7s both}@keyframes t{from{transform:translateX(0)}to{transform:translateX(var(--w))}}</style>${body}</svg>`
 }
 
 export const logAlt = (entries: readonly LogEntry[]) =>

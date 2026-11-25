@@ -51,7 +51,7 @@ const stars = (() => {
     if (rand() > 0.88) {
       // a four-point sparkle that twinkles
       const d = box(x, y - P, P, 3 * P) + box(x - P, y, 3 * P, P)
-      out += `<path class="star tw" style="animation-delay:-${(rand() * 6).toFixed(1)}s" d="${d}"/>`
+      out += `<path class="star tw" style="animation-delay:-${Math.floor(rand() * 6)}s" d="${d}"/>`
     } else {
       small += box(x, y, P, P)
     }
@@ -244,12 +244,12 @@ export const SCENE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 
 .tree{fill:#0a5a2a}.treehi{fill:#1a7a3a}.trunk{fill:#4c2c10}
 .ground{fill:#4c2408}.grass{fill:#00a844}.grassdk{fill:#007828}.tile{fill:#6c3410}.tiledk{fill:#3a1c06}
 ${cast.css}
-.c1{animation:drift 230s steps(690) infinite;animation-delay:-20s}
-.c2{animation:drift 300s steps(900) infinite;animation-delay:-120s}
-.c3{animation:drift 260s steps(780) infinite;animation-delay:-70s}
+.c1{animation:drift 400s steps(400) infinite;animation-delay:-40s}
+.c2{animation:drift 520s steps(520) infinite;animation-delay:-210s}
+.c3{animation:drift 460s steps(460) infinite;animation-delay:-130s}
 .fb{opacity:0}
-.flag.fa{animation:fa 1.6s steps(1) infinite}.flag.fb{animation:fb 1.6s steps(1) infinite}
-.blink{animation:tw 11s steps(1) infinite}
+.flag.fa{animation:fa 2s steps(1) infinite}.flag.fb{animation:fb 2s steps(1) infinite}
+.blink{animation:tw 12s steps(1) infinite}
 .shoot{opacity:0;animation:shoot 34s steps(6) infinite;animation-delay:9s}
 @keyframes tw{0%{opacity:1}50%{opacity:.3}}
 @keyframes fa{0%{opacity:1}50%{opacity:0}}
