@@ -244,13 +244,13 @@ export const SCENE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 
 .tree{fill:#0a5a2a}.treehi{fill:#1a7a3a}.trunk{fill:#4c2c10}
 .ground{fill:#4c2408}.grass{fill:#00a844}.grassdk{fill:#007828}.tile{fill:#6c3410}.tiledk{fill:#3a1c06}
 ${cast.css}
-.c1{animation:drift 230s linear infinite;animation-delay:-20s}
-.c2{animation:drift 300s linear infinite;animation-delay:-120s}
-.c3{animation:drift 260s linear infinite;animation-delay:-70s}
+.c1{animation:drift 230s steps(690) infinite;animation-delay:-20s}
+.c2{animation:drift 300s steps(900) infinite;animation-delay:-120s}
+.c3{animation:drift 260s steps(780) infinite;animation-delay:-70s}
 .fb{opacity:0}
 .flag.fa{animation:fa 1.6s steps(1) infinite}.flag.fb{animation:fb 1.6s steps(1) infinite}
 .blink{animation:tw 11s steps(1) infinite}
-.shoot{opacity:0;animation:shoot 34s linear infinite;animation-delay:9s}
+.shoot{opacity:0;animation:shoot 34s steps(6) infinite;animation-delay:9s}
 @keyframes tw{0%{opacity:1}50%{opacity:.3}}
 @keyframes fa{0%{opacity:1}50%{opacity:0}}
 @keyframes fb{0%{opacity:0}50%{opacity:1}}

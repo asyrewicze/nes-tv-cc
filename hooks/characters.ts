@@ -198,6 +198,7 @@ const CHARACTERS: Character[] = [
 ]
 
 const SLOT = 48 // seconds between runs, as before
+const RUN_FPS = 12 // position updates per second while a character runs
 const GROUND = 836
 
 /** 15 runs, each character three times, never the same one twice in a row. */
@@ -229,12 +230,15 @@ export const parade = () => {
     const at = (x: number) => `{transform:translateX(${x}px)}`
     // from the end of a run, jump straight back offstage: no slide back across the screen
     const snap = (x: number) => `{transform:translateX(${x}px);animation-timing-function:steps(1,end)}`
+    // the run itself moves in steps at RUN_FPS, as an old console would, rather than
+    // gliding at the display's full frame rate: far fewer redraws of the scene
+    const go = (x: number) => `{transform:translateX(${x}px);animation-timing-function:steps(${Math.round(c.cross * RUN_FPS)})}`
     let frames = `0%${at(start)}`
     order.forEach((id, i) => {
       if (id !== c.id) return
       const t0 = (i * SLOT) / cycle
       const t1 = (i * SLOT + c.cross) / cycle
-      frames += `${pct(t0 * 100)}${at(start)}${pct(t1 * 100)}${snap(end)}${pct(t1 * 100 + 0.01)}${at(start)}`
+      frames += `${pct(t0 * 100)}${go(start)}${pct(t1 * 100)}${snap(end)}${pct(t1 * 100 + 0.01)}${at(start)}`
     })
     frames += `100%${at(start)}`
     css += c.css
