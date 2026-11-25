@@ -1,0 +1,1 @@
+{ "name": "nes-tv", "version": "0.1.0", "description": "An animated 8-bit console-era look, with a CRT TV pane showing 5-hour, 7-day and context usage", "types": "./types/index.d.ts" }

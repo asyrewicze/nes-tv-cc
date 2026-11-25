@@ -1,0 +1,148 @@
+# ---------------------------------------------------------------------------
+# Claude Code mod
+# ---------------------------------------------------------------------------
+# Laid by the engine on every load (API types, tool types, tsconfig base);
+# regenerated per machine, so never committed.
+.claude-plugin/types/
+# Personal Claude Code settings
+.claude/settings.local.json
+.claude/*.local.*
+
+# ---------------------------------------------------------------------------
+# macOS
+# ---------------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# ---------------------------------------------------------------------------
+# Windows
+# ---------------------------------------------------------------------------
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# ---------------------------------------------------------------------------
+# Linux
+# ---------------------------------------------------------------------------
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ---------------------------------------------------------------------------
+# Vim / Neovim
+# ---------------------------------------------------------------------------
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+Session.vim
+Sessionx.vim
+.netrwhist
+tags
+[._]*.un~
+
+# ---------------------------------------------------------------------------
+# Emacs
+# ---------------------------------------------------------------------------
+\#*\#
+.\#*
+*.elc
+auto-save-list
+.projectile
+.dir-locals-2.el
+
+# ---------------------------------------------------------------------------
+# VS Code (keep shareable workspace config, drop personal state)
+# ---------------------------------------------------------------------------
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+*.vsix
+*.code-workspace
+
+# ---------------------------------------------------------------------------
+# JetBrains / Sublime / Zed / Fleet
+# ---------------------------------------------------------------------------
+.idea/
+*.iml
+*.iws
+out/
+*.sublime-workspace
+*.sublime-project
+.zed/
+.fleet/
+
+# ---------------------------------------------------------------------------
+# Node / Bun / Deno / TypeScript tooling (if ever added)
+# ---------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.yarn/cache
+.yarn/install-state.gz
+.npm/
+.bun/
+.deno/
+*.tsbuildinfo
+*.tgz
+.eslintcache
+.cache/
+coverage/
+dist/
+build/
+
+# ---------------------------------------------------------------------------
+# Secrets and environment
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---------------------------------------------------------------------------
+# Logs, scratch and previews
+# ---------------------------------------------------------------------------
+*.log
+logs/
+tmp/
+*.tmp
+*.bak
+*.orig
+*.rej
+preview/
