@@ -12,7 +12,7 @@ An animated 8-bit, console-era theme for Claude Code, with a pixel CRT TV that k
 - **5HR burn rate**: a stepped pixel chart of the 5-hour window, with a dotted projection and a verdict: `LIMIT IN 2H 38M`, `ON PACE: 72% AT RESET`, or `HOLDING STEADY`. Readings are kept across sessions, since the window spans them.
 - **Quest log**: an RPG text box narrating each turn: your messages, each tool call (`> READS auth.test.ts`, `> CASTS npm test`, `> SUMMONS AN ALLY`) with a check or an X, and `★ QUEST COMPLETE! 5 MOVES ★` at the end.
 
-Type `/tv` to reopen the pane. In a terminal it draws as text.
+The pane fits the window's height with no scroll bar: the quest log grows to fill the room and drops off when the window is short, then the chart, and on a very short window the TV shrinks. Type `/tv` to reopen the pane. In a terminal it draws as text.
 
 **A theme** for the desktop app:
 
