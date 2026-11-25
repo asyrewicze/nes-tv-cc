@@ -44,19 +44,24 @@ const sky =
 
 const stars = (() => {
   let small = ''
-  let out = ''
+  // Sparkles twinkle in three groups, each one path with one animation, rather
+  // than one animated element per sparkle.
+  const groups = ['', '', '']
   for (let i = 0; i < 90; i++) {
     const x = ri(0, 399) * P
     const y = ri(0, 130) * P
     if (rand() > 0.88) {
       // a four-point sparkle that twinkles
       const d = box(x, y - P, P, 3 * P) + box(x - P, y, 3 * P, P)
-      out += `<path class="star tw" style="animation-delay:-${(rand() * 6).toFixed(1)}s" d="${d}"/>`
+      groups[Math.floor(rand() * 3)] += d
     } else {
       small += box(x, y, P, P)
     }
   }
-  return `<path class="star dim" d="${small}"/>` + out
+  return (
+    `<path class="star dim" d="${small}"/>` +
+    groups.map((d, g) => (d ? `<path class="star tw" style="animation-delay:-${g * 2}s" d="${d}"/>` : '')).join('')
+  )
 })()
 
 const moon = (() => {
@@ -154,8 +159,8 @@ const castle = (() => {
   unlit += box(290, 750, 40, 40) + box(294, 746, 32, 4) + box(302, 742, 16, 4)
   const flag =
     `<path class="pole" d="${box(308, 548, P, 42)}"/>` +
-    `<path class="flag fa" d="${box(312, 550, 24, 4) + box(312, 554, 20, 4) + box(312, 558, 12, 4)}"/>` +
-    `<path class="flag fb" d="${box(312, 552, 20, 4) + box(312, 556, 24, 4) + box(312, 560, 10, 4)}"/>`
+    // one flag that flaps by changing shape on the beat: one animated piece, not two
+    `<path class="flag" d="${box(312, 550, 24, 4) + box(312, 554, 20, 4) + box(312, 558, 12, 4)}"/>`
   return `<path class="stone" d="${stone}"/><path class="stonedk" d="${dark}"/><path class="windk" d="${unlit}"/><path class="winlit" d="${lit}"/>${flag}`
 })()
 
@@ -223,17 +228,24 @@ const ground = (() => {
   return `<rect class="ground" y="840" width="1600" height="96"/><rect class="grass" y="830" width="1600" height="10"/><rect class="grassdk" y="840" width="1600" height="4"/><path class="grass" d="${tufts}"/><path class="tile" d="${tex}"/><path class="tiledk" d="${texDk}"/>`
 })()
 
-// ---- the parade -----------------------------------------------------------
+// ---- motion -----------------------------------------------------------------
 
+// The looping parade and the always-on scenery motion.
 const cast = parade()
+const AMBIENT = `.clouds{animation:drift 480s steps(480) infinite;animation-delay:-240s}
+.flag{transform-box:fill-box;transform-origin:0 50%;animation:wave 2s steps(1) infinite}
+.blink{animation:tw 12s steps(1) infinite}
+.tw{animation:tw 6s steps(1) infinite}
+.shoot{opacity:0;animation:shoot 34s steps(6) infinite;animation-delay:9s}
+@keyframes tw{0%{opacity:1}50%{opacity:.3}}
+@keyframes wave{50%{transform:scaleX(.8) skewY(6deg)}}
+@keyframes drift{from{transform:translateX(-1700px)}to{transform:translateX(1700px)}}
+@keyframes shoot{0%{opacity:0;transform:translate(300px,60px)}1%{opacity:.9}5%{opacity:0;transform:translate(700px,220px)}100%{opacity:0;transform:translate(700px,220px)}}`
 
 // ---- the whole scene ------------------------------------------------------
 
-export const SCENE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
-<style>
-.b0{fill:#06061a}.b1{fill:#0a0a24}.b2{fill:#0e0e2e}.b3{fill:#141438}.b4{fill:#1a1a44}.b5{fill:#222252}
+const COLORS = `.b0{fill:#06061a}.b1{fill:#0a0a24}.b2{fill:#0e0e2e}.b3{fill:#141438}.b4{fill:#1a1a44}.b5{fill:#222252}
 .star{fill:#fcfcfc}.dim{opacity:.6}
-.tw{animation:tw 6s steps(1) infinite}
 .disc{fill:#f8e8b8}.discsh{fill:#d8c890}.crater{fill:#c8b884}
 .cloud{fill:#34346c}.cloudhi{fill:#40407c}.cloudsh{fill:#2a2a5a}
 .mtn{fill:#1c2448}.mtnhi{fill:#2c3868}
@@ -242,21 +254,9 @@ export const SCENE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 
 .winlit{fill:#f8d878}.windk{fill:#14142a}
 .hill{fill:#0c3c24}.hillhi{fill:#14502c}
 .tree{fill:#0a5a2a}.treehi{fill:#1a7a3a}.trunk{fill:#4c2c10}
-.ground{fill:#4c2408}.grass{fill:#00a844}.grassdk{fill:#007828}.tile{fill:#6c3410}.tiledk{fill:#3a1c06}
-${cast.css}
-.c1{animation:drift 230s linear infinite;animation-delay:-20s}
-.c2{animation:drift 300s linear infinite;animation-delay:-120s}
-.c3{animation:drift 260s linear infinite;animation-delay:-70s}
-.fb{opacity:0}
-.flag.fa{animation:fa 1.6s steps(1) infinite}.flag.fb{animation:fb 1.6s steps(1) infinite}
-.blink{animation:tw 11s steps(1) infinite}
-.shoot{opacity:0;animation:shoot 34s linear infinite;animation-delay:9s}
-@keyframes tw{0%{opacity:1}50%{opacity:.3}}
-@keyframes fa{0%{opacity:1}50%{opacity:0}}
-@keyframes fb{0%{opacity:0}50%{opacity:1}}
-@keyframes drift{from{transform:translateX(-1500px)}to{transform:translateX(1700px)}}
-@keyframes shoot{0%{opacity:0;transform:translate(300px,60px)}1%{opacity:.9}5%{opacity:0;transform:translate(700px,220px)}100%{opacity:0;transform:translate(700px,220px)}}
-@media (prefers-color-scheme: light){
+.ground{fill:#4c2408}.grass{fill:#00a844}.grassdk{fill:#007828}.tile{fill:#6c3410}.tiledk{fill:#3a1c06}`
+
+const LIGHT = `@media (prefers-color-scheme: light){
 .b0{fill:#4c84f4}.b1{fill:#5c94fc}.b2{fill:#6ca0fc}.b3{fill:#7cacfc}.b4{fill:#8cbcfc}.b5{fill:#a4ccfc}
 .star,.shoot{display:none}
 .disc{fill:#fcd800}.discsh{fill:#fcb800}.crater{fill:#fcd800}
@@ -268,22 +268,38 @@ ${cast.css}
 .hill{fill:#00a844}.hillhi{fill:#58d854}
 .tree{fill:#007828}.treehi{fill:#00a844}.trunk{fill:#7c4c18}
 .ground{fill:#c84c0c}.grass{fill:#80d010}.grassdk{fill:#58a800}.tile{fill:#e07030}.tiledk{fill:#a03c08}
-}
-</style>
-${sky}
+}`
+
+const SKY_PART = `${sky}
 ${stars}
 ${shootingStar}
 ${moon}
-<g class="c1" style="translate:240px 110px">${cloud(46, 14)}</g>
-<g class="c2" style="translate:820px 230px">${cloud(60, 18)}</g>
-<g class="c3" style="translate:1060px 40px">${cloud(36, 11)}</g>
+<g class="clouds">
+<g transform="translate(240 110)">${cloud(46, 14)}</g>
+<g transform="translate(820 230)">${cloud(60, 18)}</g>
+<g transform="translate(1060 40)">${cloud(36, 11)}</g>
+</g>
 ${mountains}
 ${castle}
-${city}
-<g transform="translate(0 -32)">
-${hills}
+${city}`
+
+const LAND_PART = `${hills}
 ${trees}
-${ground}
-${cast.svg}
+${ground}`
+
+const compose = (css: string, characters: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+<style>
+${COLORS}
+${css}
+${LIGHT}
+</style>
+${SKY_PART}
+<g transform="translate(0 -32)">
+${LAND_PART}
+${characters}
 </g>
 </svg>`
+
+/** The whole animated scene. */
+export const SCENE = compose(`${cast.css}\n${AMBIENT}`, cast.svg)
+

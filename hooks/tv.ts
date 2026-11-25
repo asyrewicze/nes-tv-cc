@@ -53,11 +53,11 @@ export const tvSvg = (r: Reading, now: number) => {
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 312" width="320" height="312" shape-rendering="crispEdges">
 <style>
-.cursor{animation:blink 1.2s steps(1) infinite}
-.roll{animation:roll 7s linear infinite}
-.tip{animation:blink 2.4s steps(1) infinite}.tip2{animation:blink 2.4s steps(1) infinite;animation-delay:-1.2s}
-.led{animation:glow 3s ease-in-out infinite}
-.flick{animation:flick 9s steps(1) infinite}
+.cursor{animation:blink 2s steps(1) infinite}
+.roll{animation:roll 7s steps(7) infinite}
+.tip{animation:blink 2s steps(1) infinite}.tip2{animation:blink 2s steps(1) infinite;animation-delay:-1s}
+.led{animation:glow 4s steps(2) infinite}
+.flick{animation:flick 10s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
 @keyframes roll{from{transform:translateY(-30px)}to{transform:translateY(170px)}}
 @keyframes glow{50%{opacity:.55}}
