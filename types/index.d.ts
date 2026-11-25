@@ -18,7 +18,7 @@ export type LogEntry = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'nes-tv': {
+    'pixel-tv': {
       reading: Shaped<Reading>
       tick: number
       samples: Shaped<Sample[]>

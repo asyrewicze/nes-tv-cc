@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { layoutFor } from '../hooks/layout'
+import { layoutFor, opensUnasked } from '../hooks/layout'
 
 const CHART = 150
 
@@ -29,4 +29,11 @@ test('whatever fits never exceeds the room', async () => {
     // the TV never shrinks below 120px, so only tiny panes can overflow
     if (fit.tvH > 120) expect(used).toBeLessThanOrEqual(rows * 20 - 8)
   }
+})
+
+test('the pane opens by itself on desktop, including before a surface attaches, but not in a terminal', async () => {
+  expect(opensUnasked('desktop')).toBe(true)
+  expect(opensUnasked(null)).toBe(true)
+  expect(opensUnasked('terminal')).toBe(false)
+  expect(opensUnasked('mobile')).toBe(false)
 })

@@ -4,20 +4,20 @@ import type { EngineInterface, Register, SessionContextUsage, SessionRateLimit, 
 import type { LogEntry, Reading, Sample } from '../types'
 import { chartAlt, chartSvg, CHART_H } from './chart'
 import { makeColors } from './make-colors.js'
-import { GAP, layoutFor } from './layout'
+import { GAP, layoutFor, opensUnasked } from './layout'
 import { describe, logAlt, logHeight, logSvg } from './questlog'
 import { SCENE } from './scene'
 import { tvAlt, tvSvg } from './tv'
 
-const PANE = 'nes-tv'
-const reading = atom({ plugin: 'nes-tv', key: 'reading' } as const, {}, { shape: 'reading-1' })
-const tick = atom({ plugin: 'nes-tv', key: 'tick' } as const, 0)
-const samples = atom({ plugin: 'nes-tv', key: 'samples' } as const, [], { shape: 'samples-1' })
-const log = atom({ plugin: 'nes-tv', key: 'log' } as const, [], { shape: 'log-1' })
+const PANE = 'pixel-tv'
+const reading = atom({ plugin: 'pixel-tv', key: 'reading' } as const, {}, { shape: 'reading-1' })
+const tick = atom({ plugin: 'pixel-tv', key: 'tick' } as const, 0)
+const samples = atom({ plugin: 'pixel-tv', key: 'samples' } as const, [], { shape: 'samples-1' })
+const log = atom({ plugin: 'pixel-tv', key: 'log' } as const, [], { shape: 'log-1' })
 
 // The 5-hour samples outlive the session ($.store), since the window spans sessions.
 const STORE_KEY = 'samples-5h-v1'
-// 'off' once the person runs /nes-theme off, kept across sessions; anything else is on.
+// 'off' once the person runs /pixel-theme off, kept across sessions; anything else is on.
 const THEME_KEY = 'theme-mode-v1'
 const MAX_LOG = 80
 
@@ -83,11 +83,11 @@ const { theme, problems } = makeColors({
   },
 })
 
-const hardShadow = { x: 4, y: 4, blur: 0, color: '#000000' }
+const hardShadow = { x: 4, y: 4, blur: 0, color: '#000000' } as const
 
 const LOOK: ThemeSetArgs = {
   colors: theme,
-  backdrop: { scene: 'nes-night', glass: { blur: 0, tint: '#000000', opacity: 0.25 } },
+  backdrop: { scene: 'pixel-night', glass: { blur: 0, tint: '#000000', opacity: 0.25 } },
   style: {
     Text: { fontFamily: ['mono'], fontSize: 14, lineHeight: 22 },
     Heading: { fontFamily: ['mono'], fontWeight: 'bold', color: '#f8b800', letterSpacing: 1 },
@@ -139,9 +139,9 @@ const SOUND: ThemeSound = {
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const unpainted = problems.find(line => line.startsWith("Desktop won't paint"))
-    if (unpainted !== undefined) $.ui.log(`nes-tv: ${unpainted}`)
+    if (unpainted !== undefined) $.ui.log(`pixel-tv: ${unpainted}`)
 
-    // The look, unless the person turned it off with /nes-theme off.
+    // The look, unless the person turned it off with /pixel-theme off.
     if (!(await isThemeOff($))) await applyLook($)
 
     // Bring back the 5-hour samples earlier sessions saw.
@@ -162,8 +162,12 @@ export const register: Register = on => {
     }
 
     await $.command.register({ name: 'tv', description: 'Turn on the 8-bit usage TV' })
-    await $.command.register({ name: 'nes-theme', description: 'Turn the 8-bit theme on or off: /nes-theme on | off' })
-    void $.ui.open({ id: PANE, title: 'Usage TV' })
+    await $.command.register({ name: 'pixel-theme', description: 'Turn the 8-bit theme on or off: /pixel-theme on | off' })
+    // Open the pane unasked only where it's a sidebar: the desktop app docks it
+    // beside the chat. A desktop session can start before its surface attaches
+    // (surface null), so only a known terminal or the mobile app, which don't
+    // dock it, wait for /tv instead.
+    if (opensUnasked(e.surface)) void $.ui.open({ id: PANE, title: 'Usage TV' })
 
     // Recount the "resets in" lines once a minute.
     $.clock.every(60_000, async () => {
@@ -224,22 +228,22 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('command.run', { command: 'nes-theme' }, async ($, e) => {
+  on('command.run', { command: 'pixel-theme' }, async ($, e) => {
     const arg = e.args.trim().toLowerCase()
     const wasOff = await isThemeOff($)
-    if (arg === '') return { text: `NES theme is ${wasOff ? 'off' : 'on'}. Use /nes-theme on or /nes-theme off.` }
-    if (arg !== 'on' && arg !== 'off') return { text: 'Use /nes-theme on or /nes-theme off.' }
+    if (arg === '') return { text: `Pixel theme is ${wasOff ? 'off' : 'on'}. Use /pixel-theme on or /pixel-theme off.` }
+    if (arg !== 'on' && arg !== 'off') return { text: 'Use /pixel-theme on or /pixel-theme off.' }
     await $.store.set(THEME_KEY, arg)
     if (arg === 'off') {
       try {
         await $.theme.clear()
       } catch (error) {
-        $.ui.log(`nes-tv: ${String(error)}`)
+        $.ui.log(`pixel-tv: ${String(error)}`)
       }
-      return { text: 'NES theme off: the app is back to its default look. The usage pane stays; close it from its tab. /nes-theme on brings the theme back.' }
+      return { text: 'Pixel theme off: the app is back to its default look. The usage pane stays; close it from its tab. /pixel-theme on brings the theme back.' }
     }
     if (wasOff) await applyLook($)
-    return { text: 'NES theme on.' }
+    return { text: 'Pixel theme on.' }
   })
 
   on('command.run', { command: 'tv' }, async $ => {
@@ -357,19 +361,24 @@ function topGap(svg: string, h: number, gap: number) {
   return stack([{ svg: '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="1"></svg>', h: gap - 1 }, { svg, h }], 1)
 }
 
-/** Sets the NES look. Newer builds take style and sound; fall back step by step on older ones. */
+/**
+ * Sets the pixel look. Newer builds take style and sound; fall back step by step on
+ * older ones. When nothing attached draws themes (a terminal, say), the reason
+ * goes to the log rather than failing silently.
+ */
 async function applyLook($: EngineInterface) {
   for (const look of [{ ...LOOK, sound: SOUND }, LOOK, { colors: LOOK.colors, backdrop: LOOK.backdrop }]) {
     try {
-      await $.theme.set(look)
+      const result = await $.theme.set(look)
+      if (!result.isDrawn) $.ui.log(`pixel-tv: the theme isn't drawn here: ${result.reason}`)
       return
     } catch (error) {
-      $.ui.log(`nes-tv: ${String(error)}`)
+      $.ui.log(`pixel-tv: ${String(error)}`)
     }
   }
 }
 
-/** Whether the person turned the theme off with /nes-theme off. */
+/** Whether the person turned the theme off with /pixel-theme off. */
 async function isThemeOff($: EngineInterface) {
   return (await $.store.get(THEME_KEY)) === 'off'
 }

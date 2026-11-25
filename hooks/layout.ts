@@ -39,3 +39,11 @@ export const layoutFor = (bodyRows: number, chartH: number): Layout => {
   const logLines = lines >= MIN_LOG_LINES ? Math.min(lines, MAX_LOG_LINES) : 0
   return { tvW: TV_W, tvH: TV_H, showChart, logLines: showChart ? logLines : 0 }
 }
+
+/**
+ * Whether the pane may open by itself at session start: only where it docks as a
+ * sidebar. A desktop session can start before its surface attaches (null), so
+ * only a known terminal or the mobile app, where it would sit over the prompt,
+ * wait for /tv.
+ */
+export const opensUnasked = (surface: string | null) => surface !== 'terminal' && surface !== 'mobile'
