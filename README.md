@@ -23,6 +23,18 @@ Type `/tv` to reopen the pane. In a terminal it draws as text.
 
 With reduced motion turned on, the backdrop holds still.
 
+### Theme modes
+
+Animated backdrops cost CPU while anything in them is moving, so the theme has three modes. Pick one with `/nes-theme`; your choice is remembered across sessions.
+
+| Command | What you get |
+| --- | --- |
+| `/nes-theme full` | Everything moves: drifting clouds, twinkling stars, blinking windows, the flag, shooting stars, the parade, and the TV's animations. |
+| `/nes-theme lite` | The same scene, holding still, with one character running by every 48 seconds. Between runs nothing animates, including the pane, so it's much lighter on CPU. |
+| `/nes-theme off` | The app's default look. The usage pane stays; reopen it with `/tv` if you close it. |
+
+`/nes-theme` on its own says which mode is on.
+
 ## Install
 
 At the prompt of a terminal session:

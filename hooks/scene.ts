@@ -1,4 +1,4 @@
-import { parade } from './characters'
+import { oneRun, parade } from './characters'
 
 // The backdrop: a pixel night (dark mode) or day (light mode) over a castle,
 // a city skyline and stepped hills, with a parade of characters (characters.ts).
@@ -228,17 +228,24 @@ const ground = (() => {
   return `<rect class="ground" y="840" width="1600" height="96"/><rect class="grass" y="830" width="1600" height="10"/><rect class="grassdk" y="840" width="1600" height="4"/><path class="grass" d="${tufts}"/><path class="tile" d="${tex}"/><path class="tiledk" d="${texDk}"/>`
 })()
 
-// ---- the parade -----------------------------------------------------------
+// ---- motion -----------------------------------------------------------------
 
+// Full mode: the looping parade and the always-on scenery motion.
 const cast = parade()
+const AMBIENT = `.clouds{animation:drift 480s steps(480) infinite;animation-delay:-240s}
+.flag{transform-box:fill-box;transform-origin:0 50%;animation:wave 2s steps(1) infinite}
+.blink{animation:tw 12s steps(1) infinite}
+.tw{animation:tw 6s steps(1) infinite}
+.shoot{opacity:0;animation:shoot 34s steps(6) infinite;animation-delay:9s}
+@keyframes tw{0%{opacity:1}50%{opacity:.3}}
+@keyframes wave{50%{transform:scaleX(.8) skewY(6deg)}}
+@keyframes drift{from{transform:translateX(-1700px)}to{transform:translateX(1700px)}}
+@keyframes shoot{0%{opacity:0;transform:translate(300px,60px)}1%{opacity:.9}5%{opacity:0;transform:translate(700px,220px)}100%{opacity:0;transform:translate(700px,220px)}}`
 
 // ---- the whole scene ------------------------------------------------------
 
-export const SCENE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
-<style>
-.b0{fill:#06061a}.b1{fill:#0a0a24}.b2{fill:#0e0e2e}.b3{fill:#141438}.b4{fill:#1a1a44}.b5{fill:#222252}
+const COLORS = `.b0{fill:#06061a}.b1{fill:#0a0a24}.b2{fill:#0e0e2e}.b3{fill:#141438}.b4{fill:#1a1a44}.b5{fill:#222252}
 .star{fill:#fcfcfc}.dim{opacity:.6}
-.tw{animation:tw 6s steps(1) infinite}
 .disc{fill:#f8e8b8}.discsh{fill:#d8c890}.crater{fill:#c8b884}
 .cloud{fill:#34346c}.cloudhi{fill:#40407c}.cloudsh{fill:#2a2a5a}
 .mtn{fill:#1c2448}.mtnhi{fill:#2c3868}
@@ -247,17 +254,9 @@ export const SCENE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 
 .winlit{fill:#f8d878}.windk{fill:#14142a}
 .hill{fill:#0c3c24}.hillhi{fill:#14502c}
 .tree{fill:#0a5a2a}.treehi{fill:#1a7a3a}.trunk{fill:#4c2c10}
-.ground{fill:#4c2408}.grass{fill:#00a844}.grassdk{fill:#007828}.tile{fill:#6c3410}.tiledk{fill:#3a1c06}
-${cast.css}
-.clouds{animation:drift 480s steps(480) infinite;animation-delay:-240s}
-.flag{transform-box:fill-box;transform-origin:0 50%;animation:wave 2s steps(1) infinite}
-.blink{animation:tw 12s steps(1) infinite}
-.shoot{opacity:0;animation:shoot 34s steps(6) infinite;animation-delay:9s}
-@keyframes tw{0%{opacity:1}50%{opacity:.3}}
-@keyframes wave{50%{transform:scaleX(.8) skewY(6deg)}}
-@keyframes drift{from{transform:translateX(-1700px)}to{transform:translateX(1700px)}}
-@keyframes shoot{0%{opacity:0;transform:translate(300px,60px)}1%{opacity:.9}5%{opacity:0;transform:translate(700px,220px)}100%{opacity:0;transform:translate(700px,220px)}}
-@media (prefers-color-scheme: light){
+.ground{fill:#4c2408}.grass{fill:#00a844}.grassdk{fill:#007828}.tile{fill:#6c3410}.tiledk{fill:#3a1c06}`
+
+const LIGHT = `@media (prefers-color-scheme: light){
 .b0{fill:#4c84f4}.b1{fill:#5c94fc}.b2{fill:#6ca0fc}.b3{fill:#7cacfc}.b4{fill:#8cbcfc}.b5{fill:#a4ccfc}
 .star,.shoot{display:none}
 .disc{fill:#fcd800}.discsh{fill:#fcb800}.crater{fill:#fcd800}
@@ -269,9 +268,9 @@ ${cast.css}
 .hill{fill:#00a844}.hillhi{fill:#58d854}
 .tree{fill:#007828}.treehi{fill:#00a844}.trunk{fill:#7c4c18}
 .ground{fill:#c84c0c}.grass{fill:#80d010}.grassdk{fill:#58a800}.tile{fill:#e07030}.tiledk{fill:#a03c08}
-}
-</style>
-${sky}
+}`
+
+const SKY_PART = `${sky}
 ${stars}
 ${shootingStar}
 ${moon}
@@ -282,11 +281,36 @@ ${moon}
 </g>
 ${mountains}
 ${castle}
-${city}
-<g transform="translate(0 -32)">
-${hills}
+${city}`
+
+const LAND_PART = `${hills}
 ${trees}
-${ground}
-${cast.svg}
+${ground}`
+
+const compose = (css: string, characters: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" shape-rendering="crispEdges">
+<style>
+${COLORS}
+${css}
+${LIGHT}
+</style>
+${SKY_PART}
+<g transform="translate(0 -32)">
+${LAND_PART}
+${characters}
 </g>
 </svg>`
+
+/** Full mode: everything moves, and the parade loops by itself. */
+export const SCENE = compose(`${cast.css}\n${AMBIENT}`, cast.svg)
+
+/**
+ * Lite mode: no looping animation at all, so between runs the scene is idle.
+ * `runner` is the character to send across once, as the mod redraws the scene
+ * for each run; with none, the scene is completely still.
+ */
+export const liteScene = (runner?: { id: string; nonce: number }) => {
+  const run = runner ? oneRun(runner.id, runner.nonce) : { css: '', svg: '' }
+  return compose(`.shoot{display:none}\n${run.css}`, run.svg)
+}
+
+export { CHARACTER_IDS } from './characters'

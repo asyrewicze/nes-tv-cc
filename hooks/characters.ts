@@ -270,3 +270,35 @@ export const parade = () => {
   }
   return { svg, css, order }
 }
+
+export const CHARACTER_IDS = CHARACTERS.map(c => c.id)
+
+/**
+ * One character crossing once, for lite mode. Every animation here has a set
+ * number of iterations, so once the run is over nothing is animating and the
+ * scene sits idle. `nonce` makes each run's source differ, so a redraw restarts it.
+ */
+export const oneRun = (id: string, nonce: number) => {
+  const c = CHARACTERS.find(one => one.id === id) ?? CHARACTERS[0]!
+  const width = Math.max(...c.a.map(r => r.length)) * c.s
+  const height = c.a.length * c.s
+  const frameW = Math.max(width, ...c.b.map(r => r.length * c.s))
+  const lift = c.bob * c.s
+  const y = GROUND - height - c.lift
+  const steps = Math.round(c.cross * RUN_FPS)
+  const waddles = Math.round(c.cross / c.step)
+  const css =
+    c.css +
+    `@keyframes once-run{from{transform:translateX(${-width - 40}px)}to{transform:translateX(1640px)}}` +
+    `@keyframes once-walk{0%{transform:translateX(0)}50%{transform:translateX(-${frameW}px)}}` +
+    `.once-run{transform:translateX(${-width - 40}px);animation:once-run ${c.cross}s steps(${steps}) .5s 1 both}` +
+    `.once-walk{animation:once-walk ${c.step}s steps(1,end) .5s ${waddles}}`
+  const svg =
+    `<g id="run-${nonce}" transform="translate(0 ${y})"><g class="once-run">` +
+    `<svg x="0" y="${-lift}" width="${frameW}" height="${height + lift}" viewBox="0 ${-lift} ${frameW} ${height + lift}" overflow="hidden">` +
+    `<g class="once-walk">` +
+    sprite(c.a, c.pal, c.s) +
+    `<g transform="translate(${frameW} 0)">${sprite(c.b, c.pal, c.s, -lift)}</g>` +
+    `</g></svg></g></g>`
+  return { css, svg }
+}

@@ -5,7 +5,7 @@ import type { LogEntry, Reading, Sample } from '../types'
 import { chartAlt, chartSvg, CHART_H } from './chart'
 import { makeColors } from './make-colors.js'
 import { describe, logAlt, logHeight, logSvg } from './questlog'
-import { SCENE } from './scene'
+import { CHARACTER_IDS, liteScene, SCENE } from './scene'
 import { tvAlt, tvSvg } from './tv'
 
 const PANE = 'nes-tv'
@@ -13,10 +13,14 @@ const reading = atom({ plugin: 'nes-tv', key: 'reading' } as const, {}, { shape:
 const tick = atom({ plugin: 'nes-tv', key: 'tick' } as const, 0)
 const samples = atom({ plugin: 'nes-tv', key: 'samples' } as const, [], { shape: 'samples-1' })
 const log = atom({ plugin: 'nes-tv', key: 'log' } as const, [], { shape: 'log-1' })
+const mode = atom({ plugin: 'nes-tv', key: 'mode' } as const, 'full')
+const runner = atom({ plugin: 'nes-tv', key: 'runner' } as const, null, { shape: 'runner-1' })
 
 // The 5-hour samples outlive the session ($.store), since the window spans sessions.
 const STORE_KEY = 'samples-5h-v1'
-const THEME_OFF_KEY = 'theme-off-v1'
+const THEME_OFF_KEY = 'theme-off-v1' // read once, to carry over an earlier /nes-theme off
+const THEME_MODE_KEY = 'theme-mode-v1'
+type ThemeMode = 'full' | 'lite' | 'off'
 const LOG_LINES = 17
 const GAP = 6
 const MAX_LOG = 80
@@ -141,8 +145,15 @@ export const register: Register = on => {
     const unpainted = problems.find(line => line.startsWith("Desktop won't paint"))
     if (unpainted !== undefined) $.ui.log(`nes-tv: ${unpainted}`)
 
-    // The look, unless the person turned it off with /nes-theme off (kept across sessions).
-    if ((await $.store.get(THEME_OFF_KEY)) !== true) await applyLook($)
+    // The look in the mode the person chose with /nes-theme (kept across sessions).
+    const chosen = await storedMode($)
+    await update($, mode, () => chosen)
+    if (chosen !== 'off') await applyLook($)
+
+    // Lite mode: send one character across every 48 seconds by redrawing the
+    // backdrop with a single run that ends, so nothing animates in between.
+    $.clock.after(5_000, () => nextRunner($))
+    $.clock.every(48_000, () => nextRunner($))
 
     // Bring back the 5-hour samples earlier sessions saw.
     const stored = await $.store.get(STORE_KEY)
@@ -162,7 +173,7 @@ export const register: Register = on => {
     }
 
     await $.command.register({ name: 'tv', description: 'Turn on the 8-bit usage TV' })
-    await $.command.register({ name: 'nes-theme', description: 'Turn the 8-bit theme on or off: /nes-theme on | off' })
+    await $.command.register({ name: 'nes-theme', description: 'Theme mode: /nes-theme full | lite | off' })
     void $.ui.open({ id: PANE, title: 'Usage TV' })
 
     // Recount the "resets in" lines once a minute.
@@ -226,21 +237,29 @@ export const register: Register = on => {
 
   on('command.run', { command: 'nes-theme' }, async ($, e) => {
     const arg = e.args.trim().toLowerCase()
-    const isOff = (await $.store.get(THEME_OFF_KEY)) === true
-    const turnOff = arg === 'off' || (arg === '' && !isOff)
-    if (arg !== '' && arg !== 'on' && arg !== 'off') return { text: 'Use /nes-theme on or /nes-theme off.' }
-    if (turnOff) {
-      await $.store.set(THEME_OFF_KEY, true)
+    const current = await storedMode($)
+    const USAGE =
+      'full: everything moves. lite: the scene holds still and a character runs by every 48 seconds (lighter on CPU). off: the app\'s default look.'
+    if (arg === '') return { text: `NES theme is ${current}. Use /nes-theme full, lite or off. ${USAGE}` }
+    const wanted: ThemeMode | undefined = arg === 'on' ? 'full' : arg === 'full' || arg === 'lite' || arg === 'off' ? arg : undefined
+    if (!wanted) return { text: `Use /nes-theme full, lite or off. ${USAGE}` }
+    await $.store.set(THEME_MODE_KEY, wanted)
+    await update($, mode, () => wanted)
+    if (wanted === 'off') {
       try {
         await $.theme.clear()
       } catch (error) {
         $.ui.log(`nes-tv: ${String(error)}`)
       }
-      return { text: 'NES theme off: the app is back to its default look. The usage pane stays; close it from its tab. /nes-theme on brings the theme back.' }
+      return { text: 'NES theme off: the app is back to its default look. The usage pane stays; close it from its tab. /nes-theme full or lite brings the theme back.' }
     }
-    await $.store.set(THEME_OFF_KEY, false)
-    await applyLook($)
-    return { text: 'NES theme on.' }
+    if (current === 'off') await applyLook($)
+    return {
+      text:
+        wanted === 'lite'
+          ? 'NES theme lite: the scene holds still and a character runs by every 48 seconds.'
+          : 'NES theme full: everything moves.',
+    }
   })
 
   on('command.run', { command: 'tv' }, async $ => {
@@ -248,10 +267,12 @@ export const register: Register = on => {
     return { text: 'Usage TV switched on.' }
   })
 
-  on('ui.render', { component: 'Backdrop' }, ($, e, next) => {
+  on('ui.render', { component: 'Backdrop' }, async ($, e, next) => {
     if (e.surface !== 'desktop' && e.surface !== 'mobile') return next(e)
     const { Svg } = $.ui.resolve(e)
-    return <Svg source={SCENE} alt="A pixel night sky with drifting clouds over blocky hills" isInteractive />
+    const isLite = (await read($, mode)) === 'lite'
+    const source = isLite ? liteScene((await read($, runner)) ?? undefined) : SCENE
+    return <Svg source={source} alt="A pixel night sky over a castle, a city and hills" isInteractive />
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
@@ -266,14 +287,16 @@ export const register: Register = on => {
       // read the time to the minute, so a log update leaves their sources unchanged
       // and the app doesn't redraw them at all.
       const minute = Math.floor(now / 60_000) * 60_000
-      const tv = <Svg source={tvSvg(r, minute)} alt={tvAlt(r)} width={e.props.placement === 'widget' ? 200 : 320} height={e.props.placement === 'widget' ? 195 : 312} />
+      // lite mode: the pane holds still too (finite effects like the typing stay)
+      const calm = (await read($, mode)) === 'lite' ? stillPane : (svg: string) => svg
+      const tv = <Svg source={calm(tvSvg(r, minute))} alt={tvAlt(r)} width={e.props.placement === 'widget' ? 200 : 320} height={e.props.placement === 'widget' ? 195 : 312} />
       if (e.props.placement === 'widget') {
         return <Box flexDirection="column" alignItems="center">{tv}</Box>
       }
       const s = await read($, samples)
       const entries = await read($, log)
-      const chart = topGap(chartSvg(s, r.five?.resetsAt, minute), CHART_H, GAP)
-      const quest = topGap(logSvg(entries, LOG_LINES, now), logHeight(LOG_LINES), GAP)
+      const chart = topGap(calm(chartSvg(s, r.five?.resetsAt, minute)), CHART_H, GAP)
+      const quest = topGap(calm(logSvg(entries, LOG_LINES, now)), logHeight(LOG_LINES), GAP)
       return (
         <Box flexDirection="column" alignItems="center">
           {tv}
@@ -362,4 +385,35 @@ async function applyLook($: EngineInterface) {
       $.ui.log(`nes-tv: ${String(error)}`)
     }
   }
+}
+
+/** The theme mode the person chose, carrying over an earlier `/nes-theme off`. */
+async function storedMode($: EngineInterface): Promise<ThemeMode> {
+  const saved = await $.store.get(THEME_MODE_KEY)
+  if (saved === 'full' || saved === 'lite' || saved === 'off') return saved
+  return (await $.store.get(THEME_OFF_KEY)) === true ? 'off' : 'full'
+}
+
+// Lite mode's running order: each character once per round, shuffled, never the
+// same one twice in a row across rounds.
+let bag: string[] = []
+let lastRunner = ''
+
+/** In lite mode, picks the next character and redraws the backdrop for its run. */
+async function nextRunner($: EngineInterface) {
+  if ((await read($, mode)) !== 'lite') return
+  if (bag.length === 0) {
+    bag = [...CHARACTER_IDS].sort(() => Math.random() - 0.5)
+    if (bag[0] === lastRunner) bag.push(bag.shift()!)
+  }
+  const id = bag.shift()!
+  lastRunner = id
+  const nonce = await $.clock.now() // differs every run, so each redraw restarts it
+  await update($, runner, () => ({ id, nonce }))
+}
+
+
+/** Takes out a drawing's looping animations, leaving ones that finish by themselves. */
+function stillPane(svg: string) {
+  return svg.replace(/animation:[^;}]*infinite[^;}]*;?/g, '')
 }

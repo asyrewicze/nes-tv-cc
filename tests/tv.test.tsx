@@ -18,6 +18,7 @@ const engine = (on: any, stored?: unknown) => {
   on('command.register', () => ({ value: { command: 'tv' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('clock.every', () => ({ value: {} }))
+  on('clock.after', () => ({ value: {} }))
   on('clock.now', () => ({ value: Date.parse('2029-12-31T20:00:00Z') }))
   on('ui.log', () => ({ value: undefined }))
   on('session.measure', (_: unknown, e: any) => ({ changed: e.changed }))
