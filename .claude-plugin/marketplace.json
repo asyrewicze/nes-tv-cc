@@ -1,0 +1,5 @@
+{
+  "name": "nes-tv-cc",
+  "owner": { "name": "asyrewicze" },
+  "plugins": [{ "name": "nes-tv", "source": "./" }]
+}

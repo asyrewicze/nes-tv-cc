@@ -1,0 +1,58 @@
+# nes-tv
+
+An animated 8-bit, console-era theme for Claude Code, with a pixel CRT TV that keeps an eye on your usage.
+
+## What you get
+
+**A usage pane** beside the chat:
+
+- **The TV**: a wood-cabinet CRT plugged into a little grey console, showing your **5-hour** and **7-day** usage and how full this session's **context** is, each as a 10-block meter (green, then yellow from 50%, red from 80%), with reset countdowns.
+- **5HR burn rate**: a stepped pixel chart of the 5-hour window, with a dotted projection and a verdict: `LIMIT IN 2H 38M`, `ON PACE: 72% AT RESET`, or `HOLDING STEADY`. Readings are kept across sessions, since the window spans them.
+- **Quest log**: an RPG text box narrating each turn: your messages, each tool call (`> READS auth.test.ts`, `> CASTS npm test`, `> SUMMONS AN ALLY`) with a check or an X, and `★ QUEST COMPLETE! 5 MOVES ★` at the end.
+
+Type `/tv` to reopen the pane. In a terminal it draws as text.
+
+**A theme** for the desktop app:
+
+- An animated pixel backdrop: a night sky with stars, a cratered moon and a shooting star (a blue day sky in light mode), drifting clouds, a castle, a lit city skyline, hills and pines.
+- A parade of original characters who take turns running along the ground every 48 seconds, in an order shuffled each session: a penguin in a scarf, a knight, a little dragon, a one-eyed city-stomping monster, and a bearded plumber with a plunger.
+- Monospace text in square, dialog-box message styling with hard shadows.
+- Short square-wave sound cues (sending, tool calls, prompts, errors, compacting, finishing). They play once you turn on the speaker in the session's title bar.
+
+With reduced motion turned on, the backdrop holds still.
+
+## Install
+
+At the prompt of a terminal session:
+
+```
+/plugin install nes-tv --marketplace asyrewicze/nes-tv-cc
+```
+
+Answer `y` to add the marketplace, then pick a scope (user scope loads it in every session).
+
+From a shell:
+
+```bash
+claude plugin install nes-tv --marketplace asyrewicze/nes-tv-cc
+```
+
+In the desktop app, where `/plugin` does not run: click **+** next to the prompt box, then **Plugins**, **Add marketplace** with `asyrewicze/nes-tv-cc`, then **Add plugin**.
+
+The 5-hour and 7-day meters fill in after Claude's first reply, and only on a subscription plan.
+
+## Developing
+
+Run Claude Code with the folder loaded directly:
+
+```bash
+claude --plugin-dir /path/to/nes-tv-cc
+```
+
+Tests: `claude plugin test /path/to/nes-tv-cc`. Validation: `claude plugin validate /path/to/nes-tv-cc`.
+
+## License
+
+GPL-3.0-or-later. See [LICENSE](LICENSE).
+
+`hooks/make-colors.js` and `hooks/make-colors.d.ts` are generated helpers supplied by Claude Code's mod tooling for building theme colors. They are included unmodified, as that tooling directs, and are not covered by this project's license.
