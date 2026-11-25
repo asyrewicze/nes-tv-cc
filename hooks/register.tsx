@@ -237,6 +237,7 @@ export const register: Register = on => {
 
   on('command.run', { command: 'nes-theme' }, async ($, e) => {
     const arg = e.args.trim().toLowerCase()
+    if (arg === 'test' || arg.startsWith('test ')) return { text: await runTest($, arg.slice(4).trim()) }
     const current = await storedMode($)
     const USAGE =
       'full: everything moves. lite: the scene holds still and a character runs by every 48 seconds (lighter on CPU). off: the app\'s default look.'
@@ -416,4 +417,46 @@ async function nextRunner($: EngineInterface) {
 /** Takes out a drawing's looping animations, leaving ones that finish by themselves. */
 function stillPane(svg: string) {
   return svg.replace(/animation:[^;}]*infinite[^;}]*;?/g, '')
+}
+
+// ---- performance test variants (temporary) ----------------------------------
+
+const TESTS: Record<string, { about: string; look: () => ThemeSetArgs }> = {
+  'no-backdrop': {
+    about: 'colors and message styling, no backdrop',
+    look: () => ({ colors: LOOK.colors, style: LOOK.style, sound: SOUND }),
+  },
+  flat: {
+    about: 'a flat color backdrop instead of the scene (no drawing)',
+    look: () => ({ ...LOOK, sound: SOUND, backdrop: { color: '#0c0c24' } }),
+  },
+  'no-glass': {
+    about: 'the full scene with the frosted glass turned off',
+    look: () => ({ ...LOOK, sound: SOUND, backdrop: { scene: 'nes-night', glass: false } }),
+  },
+  'no-style': {
+    about: 'the full scene without the message styling',
+    look: () => ({ colors: LOOK.colors, backdrop: LOOK.backdrop, sound: SOUND }),
+  },
+}
+
+/** `/nes-theme test <variant>`: sets one variant of the look for this session only. */
+async function runTest($: EngineInterface, name: string) {
+  const list = Object.entries(TESTS).map(([key, t]) => `${key} (${t.about})`).join('; ')
+  if (name === 'reset') {
+    const chosen = await storedMode($)
+    await update($, mode, () => chosen)
+    if (chosen === 'off') await $.theme.clear()
+    else await applyLook($)
+    return `Test over: back to ${chosen} mode.`
+  }
+  const variant = TESTS[name]
+  if (!variant) return `Pick a test variant: ${list}. /nes-theme test reset puts things back.`
+  await update($, mode, () => 'full') // variants are measured against full mode
+  try {
+    await $.theme.set(variant.look())
+  } catch (error) {
+    return `That variant was refused: ${String(error)}`
+  }
+  return `Testing ${name}: ${variant.about}. Measure, then try another or run /nes-theme test reset. Not saved.`
 }
