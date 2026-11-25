@@ -13,6 +13,19 @@ const short = (s: unknown, n: number) => {
   return t.length > n ? `${t.slice(0, n - 1)}.` : t
 }
 
+/**
+ * The part of a shell command worth showing: leading `NAME=value` settings and
+ * `cd somewhere &&` steps dropped, and every path shortened to its last part,
+ * so `D=/Users/me/x; cd $D && git commit -m hi` reads as `git commit -m hi`.
+ */
+export const commandGist = (command: unknown) => {
+  let c = String(command ?? '').replace(/\s+/g, ' ').trim()
+  const lead = /^(?:[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|\S*)\s*(?:;|&&)?\s*|cd\s+(?:"[^"]*"|'[^']*'|\S+)\s*(?:;|&&)\s*|export\s+[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|\S*)\s*(?:;|&&)?\s*)/
+  for (let i = 0; i < 10 && lead.test(c); i++) c = c.replace(lead, '')
+  c = c.replace(/(?:~|\$[A-Za-z_]+|"?\/)[^\s"']*\/([^\s/"']+)"?/g, '$1')
+  return c || 'A SPELL'
+}
+
 /** What a tool call reads as in the log. */
 export const describe = (tool: string, input: Record<string, unknown>) => {
   switch (tool) {
@@ -21,7 +34,7 @@ export const describe = (tool: string, input: Record<string, unknown>) => {
     case 'MultiEdit': return `EDITS ${base(input.file_path)}`
     case 'Write': return `FORGES ${base(input.file_path)}`
     case 'NotebookEdit': return `INSCRIBES ${base(input.notebook_path)}`
-    case 'Bash': return `CASTS ${short(input.command, 40)}`
+    case 'Bash': return `CASTS ${short(commandGist(input.command), 40)}`
     case 'Grep': return `SEARCHES FOR "${short(input.pattern, 20)}"`
     case 'Glob': return `SEEKS ${short(input.pattern, 24)}`
     case 'WebFetch': {
