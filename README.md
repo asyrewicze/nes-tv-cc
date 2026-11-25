@@ -33,6 +33,7 @@ With reduced motion turned on, the backdrop holds still.
 
 - Claude Code 2.1.330 or later. Older versions refuse to install it, since the animated backdrop needs a recent build.
 - The theme (backdrop, colors, message styling and sounds) shows in the Claude desktop app. In a terminal you get the usage pane as text.
+- In the desktop app, the theme and the usage pane appear once you send the first message in a new session. Clicking **+ New** opens an empty session, and Claude Code (with its plugins) starts when you send something.
 
 ## Install
 
