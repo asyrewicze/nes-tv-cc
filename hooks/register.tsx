@@ -16,10 +16,8 @@ const log = atom({ plugin: 'nes-tv', key: 'log' } as const, [], { shape: 'log-1'
 
 // The 5-hour samples outlive the session ($.store), since the window spans sessions.
 const STORE_KEY = 'samples-5h-v1'
-// Whether the person turned the theme off with /nes-theme off, kept across sessions:
-// 'off' or 'full' (an earlier 'lite' counts as on), with the first key as a fallback.
-const THEME_OFF_KEY = 'theme-off-v1'
-const THEME_MODE_KEY = 'theme-mode-v1'
+// 'off' once the person runs /nes-theme off, kept across sessions; anything else is on.
+const THEME_KEY = 'theme-mode-v1'
 const LOG_LINES = 17
 const GAP = 6
 const MAX_LOG = 80
@@ -232,7 +230,7 @@ export const register: Register = on => {
     const wasOff = await isThemeOff($)
     if (arg === '') return { text: `NES theme is ${wasOff ? 'off' : 'on'}. Use /nes-theme on or /nes-theme off.` }
     if (arg !== 'on' && arg !== 'off') return { text: 'Use /nes-theme on or /nes-theme off.' }
-    await $.store.set(THEME_MODE_KEY, arg === 'off' ? 'off' : 'full')
+    await $.store.set(THEME_KEY, arg)
     if (arg === 'off') {
       try {
         await $.theme.clear()
@@ -250,7 +248,7 @@ export const register: Register = on => {
     return { text: 'Usage TV switched on.' }
   })
 
-  on('ui.render', { component: 'Backdrop' }, async ($, e, next) => {
+  on('ui.render', { component: 'Backdrop' }, ($, e, next) => {
     if (e.surface !== 'desktop' && e.surface !== 'mobile') return next(e)
     const { Svg } = $.ui.resolve(e)
     return <Svg source={SCENE} alt="A pixel night sky over a castle, a city and hills" isInteractive />
@@ -368,7 +366,5 @@ async function applyLook($: EngineInterface) {
 
 /** Whether the person turned the theme off with /nes-theme off. */
 async function isThemeOff($: EngineInterface) {
-  const saved = await $.store.get(THEME_MODE_KEY)
-  if (saved !== undefined) return saved === 'off'
-  return (await $.store.get(THEME_OFF_KEY)) === true
+  return (await $.store.get(THEME_KEY)) === 'off'
 }

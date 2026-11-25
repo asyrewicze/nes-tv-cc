@@ -17,12 +17,8 @@ test('/nes-theme on and off are remembered across sessions', async ($, on) => {
   expect(bad.text).toBe('Use /nes-theme on or /nes-theme off.')
 })
 
-test('earlier saved choices carry over', async ($, on) => {
-  const store: Record<string, unknown> = { 'theme-off-v1': true }
+test('a saved choice other than off counts as on', async ($, on) => {
+  const store: Record<string, unknown> = { 'theme-mode-v1': 'full' }
   on('store.get', (_: unknown, e: any) => ({ value: store[e.key] }))
-  // the first version's off switch
-  expect((await $.command.run({ command: 'nes-theme', args: '' } as any)).text).toContain('NES theme is off')
-  // a lite mode choice from a test build counts as on
-  store['theme-mode-v1'] = 'lite'
   expect((await $.command.run({ command: 'nes-theme', args: '' } as any)).text).toContain('NES theme is on')
 })
