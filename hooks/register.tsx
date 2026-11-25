@@ -16,6 +16,7 @@ const log = atom({ plugin: 'nes-tv', key: 'log' } as const, [], { shape: 'log-1'
 
 // The 5-hour samples outlive the session ($.store), since the window spans sessions.
 const STORE_KEY = 'samples-5h-v1'
+const THEME_OFF_KEY = 'theme-off-v1'
 const LOG_LINES = 17
 const GAP = 6
 const MAX_LOG = 80
@@ -140,15 +141,8 @@ export const register: Register = on => {
     const unpainted = problems.find(line => line.startsWith("Desktop won't paint"))
     if (unpainted !== undefined) $.ui.log(`nes-tv: ${unpainted}`)
 
-    // Newer builds take style and sound; fall back step by step on older ones.
-    for (const look of [{ ...LOOK, sound: SOUND }, LOOK, { colors: LOOK.colors, backdrop: LOOK.backdrop }]) {
-      try {
-        await $.theme.set(look)
-        break
-      } catch (error) {
-        $.ui.log(`nes-tv: ${String(error)}`)
-      }
-    }
+    // The look, unless the person turned it off with /nes-theme off (kept across sessions).
+    if ((await $.store.get(THEME_OFF_KEY)) !== true) await applyLook($)
 
     // Bring back the 5-hour samples earlier sessions saw.
     const stored = await $.store.get(STORE_KEY)
@@ -168,6 +162,7 @@ export const register: Register = on => {
     }
 
     await $.command.register({ name: 'tv', description: 'Turn on the 8-bit usage TV' })
+    await $.command.register({ name: 'nes-theme', description: 'Turn the 8-bit theme on or off: /nes-theme on | off' })
     void $.ui.open({ id: PANE, title: 'Usage TV' })
 
     // Recount the "resets in" lines once a minute.
@@ -227,6 +222,25 @@ export const register: Register = on => {
       `* QUEST COMPLETE!${tally} *`
     await push($, entry(line, e.reason === 'error' ? 'info' : 'done', now))
     return next(e)
+  })
+
+  on('command.run', { command: 'nes-theme' }, async ($, e) => {
+    const arg = e.args.trim().toLowerCase()
+    const isOff = (await $.store.get(THEME_OFF_KEY)) === true
+    const turnOff = arg === 'off' || (arg === '' && !isOff)
+    if (arg !== '' && arg !== 'on' && arg !== 'off') return { text: 'Use /nes-theme on or /nes-theme off.' }
+    if (turnOff) {
+      await $.store.set(THEME_OFF_KEY, true)
+      try {
+        await $.theme.clear()
+      } catch (error) {
+        $.ui.log(`nes-tv: ${String(error)}`)
+      }
+      return { text: 'NES theme off: the app is back to its default look. The usage pane stays; close it from its tab. /nes-theme on brings the theme back.' }
+    }
+    await $.store.set(THEME_OFF_KEY, false)
+    await applyLook($)
+    return { text: 'NES theme on.' }
   })
 
   on('command.run', { command: 'tv' }, async $ => {
@@ -336,4 +350,16 @@ function stack(parts: { svg: string; h: number }[], gap: number) {
 /** One SVG document with `gap` units of empty space above it, for spacing in a column. */
 function topGap(svg: string, h: number, gap: number) {
   return stack([{ svg: '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="1"></svg>', h: gap - 1 }, { svg, h }], 1)
+}
+
+/** Sets the NES look. Newer builds take style and sound; fall back step by step on older ones. */
+async function applyLook($: EngineInterface) {
+  for (const look of [{ ...LOOK, sound: SOUND }, LOOK, { colors: LOOK.colors, backdrop: LOOK.backdrop }]) {
+    try {
+      await $.theme.set(look)
+      return
+    } catch (error) {
+      $.ui.log(`nes-tv: ${String(error)}`)
+    }
+  }
 }
