@@ -2,7 +2,7 @@
 
 An animated 8-bit, console-era theme for Claude Code, with a pixel CRT TV that keeps an eye on your usage.
 
-![pixel-tv in the Claude desktop app: a pixel night scene with a castle, a lit city skyline and a running knight behind the chat, and a side pane with a CRT TV showing 5-hour, 7-day and context usage, a 5-hour burn-rate chart and a quest log](docs/screenshot.webp)
+![pixel-tv in the Claude desktop app: a pixel night scene with a castle, a lit city skyline and a little dragon behind the chat, and a side pane with a CRT TV showing 5-hour, 7-day and context usage, a 5-hour burn-rate chart and a quest log](docs/screenshot.webp)
 
 ## What you get
 
