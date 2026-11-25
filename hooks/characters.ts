@@ -220,7 +220,7 @@ export const parade = () => {
   const order = shuffledOrder()
   const cycle = order.length * SLOT
   let svg = ''
-  let css = '.fb{opacity:0}'
+  let css = ''
   for (const c of CHARACTERS) {
     const width = Math.max(...c.a.map(r => r.length)) * c.s
     const height = c.a.length * c.s
@@ -253,16 +253,20 @@ export const parade = () => {
     css += c.css
     css += `@keyframes run-${c.id}{${frames}}`
     css += `.run-${c.id}{animation:run-${c.id} ${cycle}s linear 5s infinite backwards}`
+    // Both frames sit side by side on one strip behind a window one frame wide; the
+    // waddle slides the strip, so it's one animated piece per character, not two.
+    const frameW = Math.max(width, ...c.b.map(r => r.length * c.s))
+    const lift = c.bob * c.s
     const list = (l: string[]) => l.join(',')
-    css += `@keyframes wa-${c.id}{${list(showA)}{opacity:1}${showB.length ? `${list(showB)}{opacity:0}` : ''}}`
-    css += `@keyframes wb-${c.id}{${list(showA)}{opacity:0}${showB.length ? `${list(showB)}{opacity:1}` : ''}}`
-    css += `.run-${c.id} .fa{animation:wa-${c.id} ${cycle}s steps(1,end) 5s infinite backwards}`
-    css += `.run-${c.id} .fb{animation:wb-${c.id} ${cycle}s steps(1,end) 5s infinite backwards}`
+    css += `@keyframes walk-${c.id}{${list(showA)}{transform:translateX(0)}${showB.length ? `${list(showB)}{transform:translateX(-${frameW}px)}` : ''}}`
+    css += `.walk-${c.id}{animation:walk-${c.id} ${cycle}s steps(1,end) 5s infinite backwards}`
     svg +=
       `<g transform="translate(${c.restX} ${y})"><g class="run-${c.id}">` +
-      `<g class="fa">${sprite(c.a, c.pal, c.s)}</g>` +
-      `<g class="fb">${sprite(c.b, c.pal, c.s, -c.bob * c.s)}</g>` +
-      `</g></g>`
+      `<svg x="0" y="${-lift}" width="${frameW}" height="${height + lift}" viewBox="0 ${-lift} ${frameW} ${height + lift}" overflow="hidden">` +
+      `<g class="walk-${c.id}">` +
+      sprite(c.a, c.pal, c.s) +
+      `<g transform="translate(${frameW} 0)">${sprite(c.b, c.pal, c.s, -lift)}</g>` +
+      `</g></svg></g></g>`
   }
   return { svg, css, order }
 }

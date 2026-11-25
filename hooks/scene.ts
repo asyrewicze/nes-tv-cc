@@ -44,19 +44,24 @@ const sky =
 
 const stars = (() => {
   let small = ''
-  let out = ''
+  // Sparkles twinkle in three groups, each one path with one animation, rather
+  // than one animated element per sparkle.
+  const groups = ['', '', '']
   for (let i = 0; i < 90; i++) {
     const x = ri(0, 399) * P
     const y = ri(0, 130) * P
     if (rand() > 0.88) {
       // a four-point sparkle that twinkles
       const d = box(x, y - P, P, 3 * P) + box(x - P, y, 3 * P, P)
-      out += `<path class="star tw" style="animation-delay:-${Math.floor(rand() * 6)}s" d="${d}"/>`
+      groups[Math.floor(rand() * 3)] += d
     } else {
       small += box(x, y, P, P)
     }
   }
-  return `<path class="star dim" d="${small}"/>` + out
+  return (
+    `<path class="star dim" d="${small}"/>` +
+    groups.map((d, g) => (d ? `<path class="star tw" style="animation-delay:-${g * 2}s" d="${d}"/>` : '')).join('')
+  )
 })()
 
 const moon = (() => {
@@ -154,8 +159,8 @@ const castle = (() => {
   unlit += box(290, 750, 40, 40) + box(294, 746, 32, 4) + box(302, 742, 16, 4)
   const flag =
     `<path class="pole" d="${box(308, 548, P, 42)}"/>` +
-    `<path class="flag fa" d="${box(312, 550, 24, 4) + box(312, 554, 20, 4) + box(312, 558, 12, 4)}"/>` +
-    `<path class="flag fb" d="${box(312, 552, 20, 4) + box(312, 556, 24, 4) + box(312, 560, 10, 4)}"/>`
+    // one flag that flaps by changing shape on the beat: one animated piece, not two
+    `<path class="flag" d="${box(312, 550, 24, 4) + box(312, 554, 20, 4) + box(312, 558, 12, 4)}"/>`
   return `<path class="stone" d="${stone}"/><path class="stonedk" d="${dark}"/><path class="windk" d="${unlit}"/><path class="winlit" d="${lit}"/>${flag}`
 })()
 
@@ -244,17 +249,13 @@ export const SCENE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 
 .tree{fill:#0a5a2a}.treehi{fill:#1a7a3a}.trunk{fill:#4c2c10}
 .ground{fill:#4c2408}.grass{fill:#00a844}.grassdk{fill:#007828}.tile{fill:#6c3410}.tiledk{fill:#3a1c06}
 ${cast.css}
-.c1{animation:drift 400s steps(400) infinite;animation-delay:-40s}
-.c2{animation:drift 520s steps(520) infinite;animation-delay:-210s}
-.c3{animation:drift 460s steps(460) infinite;animation-delay:-130s}
-.fb{opacity:0}
-.flag.fa{animation:fa 2s steps(1) infinite}.flag.fb{animation:fb 2s steps(1) infinite}
+.clouds{animation:drift 480s steps(480) infinite;animation-delay:-240s}
+.flag{transform-box:fill-box;transform-origin:0 50%;animation:wave 2s steps(1) infinite}
 .blink{animation:tw 12s steps(1) infinite}
 .shoot{opacity:0;animation:shoot 34s steps(6) infinite;animation-delay:9s}
 @keyframes tw{0%{opacity:1}50%{opacity:.3}}
-@keyframes fa{0%{opacity:1}50%{opacity:0}}
-@keyframes fb{0%{opacity:0}50%{opacity:1}}
-@keyframes drift{from{transform:translateX(-1500px)}to{transform:translateX(1700px)}}
+@keyframes wave{50%{transform:scaleX(.8) skewY(6deg)}}
+@keyframes drift{from{transform:translateX(-1700px)}to{transform:translateX(1700px)}}
 @keyframes shoot{0%{opacity:0;transform:translate(300px,60px)}1%{opacity:.9}5%{opacity:0;transform:translate(700px,220px)}100%{opacity:0;transform:translate(700px,220px)}}
 @media (prefers-color-scheme: light){
 .b0{fill:#4c84f4}.b1{fill:#5c94fc}.b2{fill:#6ca0fc}.b3{fill:#7cacfc}.b4{fill:#8cbcfc}.b5{fill:#a4ccfc}
@@ -274,9 +275,11 @@ ${sky}
 ${stars}
 ${shootingStar}
 ${moon}
-<g class="c1" style="translate:240px 110px">${cloud(46, 14)}</g>
-<g class="c2" style="translate:820px 230px">${cloud(60, 18)}</g>
-<g class="c3" style="translate:1060px 40px">${cloud(36, 11)}</g>
+<g class="clouds">
+<g transform="translate(240 110)">${cloud(46, 14)}</g>
+<g transform="translate(820 230)">${cloud(60, 18)}</g>
+<g transform="translate(1060 40)">${cloud(36, 11)}</g>
+</g>
 ${mountains}
 ${castle}
 ${city}
